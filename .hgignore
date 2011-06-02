@@ -1,0 +1,6 @@
+syntax: glob
+PIC_Slave.hex
+*.o
+PIC_Slave.map
+PIC_Slave.cof
+PIC_Slave.mcs
