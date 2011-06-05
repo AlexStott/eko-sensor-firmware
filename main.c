@@ -7,8 +7,8 @@
 #include "modbus.h"
 #include <uart.h>
 #include <timer.h>
-#include <crc.h>
 
+#include "crc_tables.h"
 
 // Configs defined in HardwareProfiles.h
 
@@ -18,10 +18,7 @@ pduType 			mb_req_pdu; 			// pdu holding struct
 pduType 			mb_resp_pdu;
 
 
-unsigned short int test_buf[3];
-
 volatile unsigned char		mb_req_timeout = 0x00;
-volatile unsigned char		mb_crc_ready = 0x00;
 
 
 // Receive and Transmit Buffers. MAX_DATA_LENGTH is defined in Modbus.h
@@ -38,14 +35,6 @@ void __attribute__ ((interrupt,no_auto_psv)) _T1Interrupt (void)
 		mb_req_timeout = 1;
 	
 }
-
-// CRC Done
-void __attribute__((interrupt,no_auto_psv)) _CRCInterrupt (void)
-{
-    CRC_Clear_Intr_Status_Bit;
-    mb_crc_ready = 1;
-}
-
 
 
 /* MODBUS Message Timeout Timer */
@@ -76,20 +65,18 @@ void close_mb_timeout_timer()
 }
 
 /* MODBUS CRC calculation PIC24F H/W */
-unsigned int calculate_crc16(unsigned char *buffer, unsigned int length)
+unsigned int calculate_crc16(unsigned char *puchMsg, unsigned int usDataLen)
 {
-	unsigned int poly, crc_config, result;
-	test_buf[0] = 0x1103;
-	test_buf[1] = 0x0000;
-	test_buf[2] = 0x000A;
-	CRC_Config_INTR(CRC_INT_ENABLE | CRC_INT_PRIOR_4);
-	poly=0x8005;
-    crc_config = CRC_IDLE_STOP | CRC_POLYNOMIAL_LEN16 |CRC_START_SERIAL_SHIFT;
-    CRC_Config (poly , crc_config);
-	result = CRC_Calc_ChecksumWord(&test_buf,3,0x0000);
-	while (!mb_crc_ready);
-	mb_crc_ready = 0;
-	return result;
+	unsigned char uchCRCHi = 0xFF ; /* high byte of CRC initialized  */ 
+	unsigned char uchCRCLo = 0xFF ; /* low byte of CRC initialized  */ 
+	unsigned int uIndex ; /* will index into CRC lookup table  */ 
+	while (usDataLen--) /* pass through message buffer  */ 
+	{ 
+		uIndex = uchCRCLo ^ *puchMsg++ ;  /* calculate the CRC   */ 
+		uchCRCLo = uchCRCHi ^ auchCRCHi[uIndex] ; 
+		uchCRCHi = auchCRCLo[uIndex] ; 
+	} 
+	return (uchCRCHi << 8 | uchCRCLo);
 }
 
 void init_status_leds()
