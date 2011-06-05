@@ -3,6 +3,10 @@
 #define MODBUS_NOT_ADDR				-1
 #define MODBUS_UNKNOWN_FUNC		-10
 
+#define MB04_OFFSET						0x300
+#define MB04_LENGTH						0x0FF
+#define MB04_END							MB04_OFFSET + MB04_LENGTH
+
 typedef struct 
 {
   unsigned char address;  // device address (8 bits)
@@ -26,11 +30,15 @@ typedef enum {
 typedef enum  {
   MSG_OK = 0,
   CRC_FAIL,
-  FUNC_FAIL,
+  MSG_LEN_ERROR,
+  FUNC_UNSUPPORTED,
+  PARAM_ERROR,
   INTERNAL_ERR
 } pduErrorType;
 
-extern slaveStateType mb_state; // enum type for state
+extern slaveStateType 	mb_state;					 // enum type for state
+extern pduType 				mb_req_pdu; 			// pdu holding struct
+extern pduType 				mb_resp_pdu;
 
 extern unsigned char rx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b) + CRC(2b)
 extern unsigned char tx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b) + CRC(2b)
@@ -52,5 +60,6 @@ extern void DebugLED2();
 extern void DebugLED3();
 
 int modbusRecvLoop(void);
-pduErrorType checkPDU(unsigned int pduLength, pduType* msg);
-
+pduErrorType check_req_pdu(unsigned int pduLength);
+pduErrorType process_req_pdu(void);
+unsigned char format_resp_pdu(pduErrorType status);

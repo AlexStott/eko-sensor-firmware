@@ -10,6 +10,9 @@
 
 #include "crc_tables.h"
 
+
+extern	unsigned int	data1[10];
+	
 // Configs defined in HardwareProfiles.h
 
 // MODBUS specific structs and states
@@ -25,7 +28,7 @@ volatile unsigned char		mb_req_timeout = 0x00;
 unsigned char rx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b) + CRC(2b)
 unsigned char tx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b) + CRC(2b)
 
-/* Some  ISRs */
+/* ISRs */
 
 //  Timeout
 void __attribute__ ((interrupt,no_auto_psv)) _T1Interrupt (void)
@@ -64,7 +67,8 @@ void close_mb_timeout_timer()
 	mb_req_timeout = 0;
 }
 
-/* MODBUS CRC calculation PIC24F H/W */
+/* MODBUS CRC calculation PIC24F S/W */
+
 unsigned int calculate_crc16(unsigned char *puchMsg, unsigned int usDataLen)
 {
 	unsigned char uchCRCHi = 0xFF ; /* high byte of CRC initialized  */ 
@@ -78,6 +82,8 @@ unsigned int calculate_crc16(unsigned char *puchMsg, unsigned int usDataLen)
 	} 
 	return (uchCRCHi << 8 | uchCRCLo);
 }
+
+/* Status LEDs */
 
 void init_status_leds()
 {
@@ -110,7 +116,7 @@ int main(void)
 {
 	pduErrorType result;
     unsigned int len = 0;
-	
+	unsigned int i;
 	// Set up Clock
 	OSCCON	=	0x11C0;	 //select INTERNAL RC, Post Scale PPL (fixme)
 	
@@ -121,10 +127,14 @@ int main(void)
 	#endif
 	init_status_leds();
 	
-	// Setup UART
-
-
-	
+	data1[0] = 0x1234;
+	data1[1] = 0x5678;
+	data1[2] = 0x9ABC;
+	data1[3] = 0xDEF0;
+	data1[4] = 0xAAAA;
+	data1[5] = 0xBBBB;
+	data1[6] = 0xCCCC;
+	data1[7] = 0xDDDD;
 	
 	while (1)
 	{
@@ -142,24 +152,38 @@ int main(void)
 		len = modbusRecvLoop();
 		
 		CloseUART1();
-		if (len != -1)
+		// if len = MODBUS_NOT_ADDR, then skip processing
+		if (len != MODBUS_NOT_ADDR)
 		{
-			result = checkPDU(len, &mb_req_pdu);
-			//processPDU(tx_pdu, rx_pdu);
-			//formatPDU(tx_pdu, rx_pdu);
+			result = check_req_pdu(len);
+			
+			if (result == MSG_OK) 
+				result = process_req_pdu();
+			
+			len = format_resp_pdu(result);
+			mLED3_On()
+			OpenUART1(UART_EN, UART_TX_ENABLE, 25);
+			ConfigIntUART1(UART_RX_INT_DIS | UART_TX_INT_DIS);
+
+			for (i = 0; i < len; i++)
+			{
+			txByte(tx_buffer[i]);    /* transfer data word to TX reg */
+			}
 			//state = transmitPDU(void);
-			WriteUART1('A');
+			
+			//WriteUART1('A');
 			//	LATFbits.LATF4 = 0;
 			//	LATGbits.LATG6 = 0;
 			//	LATGbits.LATG8 = 1;
 			//while (TMR1 < 20000);
-			mLED2_Toggle()
+			mLED3_Off()
 			//TMR1 = 0x0000;
+			CloseUART1();
 		}
 	}
 }
 
-inline void __attribute__((always_inline)) txByte(unsigned char byte)
+void txByte(unsigned char byte)
 {
 	while(BusyUART1());
 	WriteUART1(byte);
