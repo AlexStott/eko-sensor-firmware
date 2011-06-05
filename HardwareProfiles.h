@@ -10,10 +10,12 @@
 		
 		#include "p24FJ256GB106.h"
 		
+
+		
 		/* Configuration Bit defaults for platform */
-		#define	mSetConfig2Defs()		_CONFIG2(IESO_OFF  & FNOSC_FRC & FCKSM_CSDCMD  & IOL1WAY_OFF) 
+		_CONFIG2(IESO_OFF  & FNOSC_FRC & FCKSM_CSDCMD  & IOL1WAY_OFF) 
 		// Two Speed Startup off, FRC Osc with No Post-Scale, PLL off, RP registers locked
-		#define mSetConfig1Defs()		_CONFIG1(JTAGEN_OFF & ICS_PGx2 & FWDTEN_OFF)
+		_CONFIG1(JTAGEN_OFF & ICS_PGx2 & FWDTEN_OFF)
 		// JTAG off, PG2 pins for ICSP, Watchdog Timer off
 		
 		/* LED ports */
@@ -30,12 +32,23 @@
 		
 		#include "p24F16KA102.h"
 		
-		#define	mSetConfig2Defs()		_CONFIG2(IESO_OFF  & FNOSC_FRC & FCKSM_CSDCMD  & IOL1WAY_OFF)
-		#define mSetConfig1Defs()		_CONFIG1(JTAGEN_OFF & ICS_PGx1 & FWDTEN_OFF)
+
+		
+		/* Select the FRC oscillator, disable two speed startup */
+		_FOSCSEL(FNOSC_FRC & IESO_OFF)
+		
+		/* Disable clock switching, enable clock monitor, low power secondary, OSCO pins for DIO */
+		_FOSC( FCKSM_CSECME & SOSCSEL_SOSCLP & OSCIOFNC_OFF & POSCMOD_NONE)
+		
+		/* Disable WDT. We may need this, but have yet to decide when to kick the dog */
+		_FWDT(FWDTEN_OFF & WINDIS_OFF)
+		
+		/* Enable MCLR, BORV set to 2.7, Select aux I2C pins, PUT Enabled, BOR in H/W */
+		_FPOR(MCLRE_ON & BORV_V27 & I2C1SEL_SEC & PWRTEN_ON & BOREN_BOR0)
 		
 		#define mLED1					LATAbits.LATA2
 		#define mLED2					LATAbits.LATA3
-		#define mLED3					LATBbits.LATB14
+		#define mLED3					LATBbits.LATB14 // Not populated
 	#else
 		#error "Define Target Platform"
 	#endif

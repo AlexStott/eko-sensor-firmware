@@ -31,6 +31,8 @@ file_003=.
 file_004=.
 file_005=.
 file_006=.
+file_007=.
+file_008=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -39,6 +41,8 @@ file_003=no
 file_004=no
 file_005=no
 file_006=no
+file_007=no
+file_008=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -47,6 +51,8 @@ file_003=no
 file_004=no
 file_005=no
 file_006=no
+file_007=no
+file_008=no
 [FILE_INFO]
 file_000=main.c
 file_001=modbus.c
@@ -54,7 +60,9 @@ file_002=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\h\p24FJ2
 file_003=modbus.h
 file_004=main.h
 file_005=HardwareProfiles.h
-file_006=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24FJ256GB106.gld
+file_006=SensorProfiles.h
+file_007=global.h
+file_008=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24FJ256GB106.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
