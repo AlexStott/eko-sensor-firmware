@@ -8,6 +8,7 @@
 #include "adc.h"
 #include <uart.h>
 #include <timer.h>
+#include "eko_i2c_sensors.c"
 
 #include "crc_tables.h"
 
@@ -127,9 +128,15 @@ int main(void)
 		RPOR2bits.RP4R = 3;
 	#endif
 	init_status_leds();
-	
 
-	
+	mLED1_On()
+	mLED2_On()
+
+	#ifdef SENSORKIT_ATMOS_R1
+	mcp9800_init();
+	tsl2561_init();
+	#endif
+
 	while (1)
 	{
 		OpenUART1(UART_EN, UART_TX_ENABLE, 25);
@@ -137,7 +144,7 @@ int main(void)
 
 		mLED1_Off()
 		mLED2_Off()
-		mLED2_Off()
+
 		
 		//Setup Timeout timer, start disabled
 		init_mb_timeout_timer(20000);

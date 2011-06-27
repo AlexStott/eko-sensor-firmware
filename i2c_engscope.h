@@ -1,6 +1,6 @@
 #ifndef I2C_E_H
 #define I2C_E_H
-#include "p24F16KA102.h"
+#include "p24Fxxxx.h"
 
 
 #define I2CRCV I2C1RCV
@@ -12,6 +12,8 @@ void DelayuSec(unsigned int N);
 void i2c_init(int BRG);
 
 void i2c_start(void);
+
+void i2c_restart(void);
 
 void reset_i2c_bus(void);
 
@@ -27,5 +29,9 @@ unsigned char I2Cpoll(char addr);
 void I2Cwritedouble(char addr, char subaddr, unsigned int value);
 
 unsigned int I2Creaddouble (char addr, char subaddr);
+
+char I2Cread(char addr, char subaddr);
+
+void I2Cwrite(char addr, char subaddr, char value);
 
 #endif
