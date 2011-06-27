@@ -5,6 +5,7 @@
 #include "SensorProfiles.h"
 
 #include "modbus.h"
+#include "adc.h"
 #include <uart.h>
 #include <timer.h>
 
@@ -34,7 +35,7 @@ unsigned char tx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b)
 void __attribute__ ((interrupt,no_auto_psv)) _T1Interrupt (void)
 {
    T1_Clear_Intr_Status_Bit;
-	if (mb_state == SLAVE_RECEIVING)
+//	if (mb_state == SLAVE_RECEIVING)
 		mb_req_timeout = 1;
 	
 }
@@ -48,7 +49,7 @@ void init_mb_timeout_timer(unsigned int timer_ticks)
 	CloseTimer1();
 	mb_req_timeout = 0;
 	OpenTimer1(T1_OFF | T1_PS_1_256, timer_ticks);
-	ConfigIntTimer1(T2_INT_ON|T2_INT_PRIOR_1);
+	ConfigIntTimer1(T1_INT_ON|T1_INT_PRIOR_1);
 }
 
 // start (or reset) a timeout timer
@@ -160,14 +161,23 @@ int main(void)
 			if (result == MSG_OK) 
 				result = process_req_pdu();
 			
+			//CALL ADC SOMEWHERE HEREEEEEEEEEEEEEEEEEEEEEEEEEEE <- Just so you can see me :P
+			//ADCmain();
 			len = format_resp_pdu(result);
 			mLED3_On()
 			OpenUART1(UART_EN, UART_TX_ENABLE, 25);
 			ConfigIntUART1(UART_RX_INT_DIS | UART_TX_INT_DIS);
+			
+			init_mb_timeout_timer(6400);
+			start_mb_timeout_timer();
+			while(!mb_req_timeout);
+			close_mb_timeout_timer();
+			
+			//putsUART1((unsigned int *) tx_buffer);
 
-			for (i = 0; i < len; i++)
+			for (i = 0; i < len+1; i++)
 			{
-			txByte(tx_buffer[i]);    /* transfer data word to TX reg */
+			txByte(0x00FF & tx_buffer[i]);    /* transfer data word to TX reg */
 			}
 			//state = transmitPDU(void);
 			
@@ -187,6 +197,7 @@ void txByte(unsigned char byte)
 {
 	while(BusyUART1());
 	WriteUART1(byte);
+
 }
 
 unsigned char rxByte()

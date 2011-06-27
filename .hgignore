@@ -4,3 +4,4 @@ PIC_Slave.hex
 PIC_Slave.map
 PIC_Slave.cof
 PIC_Slave.mcs
+*.log

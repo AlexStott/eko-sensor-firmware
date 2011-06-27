@@ -1,9 +1,10 @@
 #include "global.h"
 #include "SensorProfiles.h"
 #include "modbus.h"
+#include "adc.h"
 #include "p24FJ256GB106.h"
 
-#define SENSOR_ID 0x11
+#define SENSOR_ID 0xFA
 
 extern	unsigned int	data1[10];
 	
@@ -26,7 +27,7 @@ unsigned int check_function_supported(unsigned char mb_func_code)
 {
 	switch (mb_func_code)
 	{
-		case 0x00:
+		//case 0x00: check if broadcast!
 		#ifdef SUPPORT_MB01
 		case 0x01:
 		#endif
@@ -146,6 +147,7 @@ unsigned char format_resp_pdu(pduErrorType status)
 		crc16 = calculate_crc16(tx_buffer, 3+mb_resp_pdu.data_length);
 		tx_buffer[3+mb_resp_pdu.data_length] = (unsigned char)(crc16 & 0x00ff);
 		tx_buffer[3+mb_resp_pdu.data_length+1]	   = (unsigned char)(crc16 >> 8);
+		tx_buffer[3+mb_resp_pdu.data_length+2] = '\0';
 		return 3+mb_resp_pdu.data_length+2;
 	}
 	else

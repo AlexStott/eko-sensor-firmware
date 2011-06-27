@@ -12,7 +12,7 @@
  */
 #if defined (SENSORKIT_EKO_TEST)
 	//
-	#define MODBUS_ID 0x11
+	#define MODBUS_ID 0xFA
 	#define SUPPORT_MB04 // supporting function code 04
 	
 	
