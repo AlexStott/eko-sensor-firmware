@@ -6,7 +6,7 @@
 /* Change this file before compiling for different platforms 	*/
 
 // compile for the starter kit platform
-#define TARG_PIC24F_SK
+#define TARG_EKOBB_R1
 // compile for the test sensor kit
 #define SENSORKIT_EKO_TEST
 

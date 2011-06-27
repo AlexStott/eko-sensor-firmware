@@ -1,7 +1,7 @@
 [HEADER]
 magic_cookie={66E99B07-E706-4689-9E80-9B2582898A13}
 file_version=1.0
-device=PIC24FJ256GB106
+device=PIC24F16KA102
 [PATH_INFO]
 BuildDirPolicy=BuildDirIsProjectDir
 dir_src=
@@ -34,6 +34,8 @@ file_006=.
 file_007=.
 file_008=.
 file_009=.
+file_010=.
+file_011=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -45,6 +47,8 @@ file_006=no
 file_007=no
 file_008=no
 file_009=no
+file_010=no
+file_011=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -56,17 +60,21 @@ file_006=no
 file_007=no
 file_008=no
 file_009=no
+file_010=no
+file_011=no
 [FILE_INFO]
 file_000=main.c
 file_001=modbus.c
 file_002=data.c
-file_003=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\h\p24FJ256GB106.h
+file_003=adc.c
 file_004=modbus.h
 file_005=main.h
 file_006=HardwareProfiles.h
 file_007=SensorProfiles.h
 file_008=global.h
-file_009=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24FJ256GB106.gld
+file_009=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\h\p24F16KA102.h
+file_010=adc.h
+file_011=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=

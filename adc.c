@@ -2,7 +2,7 @@
 #include "SensorProfiles.h"
 #include "modbus.h"
 #include "adc.h"
-#include "p24FJ256GB106.h"
+#include "p24F16KA102.h"
 
 //declare variables
 unsigned int data;
@@ -15,7 +15,7 @@ void ADCInit()
 	//Use system clock, set TAD = TCY
    AD1CON3 = 0x0000;
 	//Set input channel
-   AD1CHS = 0x0005;
+   AD1CHS = 0x0000;
 	//Set all inputs to analog
    AD1PCFG = 0x0000;  
    //No scanned inputs
@@ -52,7 +52,7 @@ void ADCmain()
 	//turn on Timer1
 	T1CONbits.TON = 1;
 
-	for (i=0;i<dataLength;i=i++)
+	for (i=0;i<dataLength;i++)
 	{	
 		
 		TMR1=0;
@@ -68,14 +68,14 @@ void ADCmain()
 		
 		//CURRENT ADC
 		//switch input to current pin
-		AD1CHS = 0x0003;
+		AD1CHS = 0x0005;
 		
 		AD1CON1bits.SAMP = 1;
 		for (k=0;k<5;k++);
 		AD1CON1bits.SAMP = 0;
 		Ibuff[i] = ADCProcessEvents();
 		//switch input pin back to voltage pin	
-		AD1CHS = 0x0005;
+		AD1CHS = 0x0000;
 		//wait for a delay of 2.5ms before taking next sample
 		while (TMR1 <= 40);
 			

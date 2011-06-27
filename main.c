@@ -162,7 +162,7 @@ int main(void)
 				result = process_req_pdu();
 			
 			//CALL ADC SOMEWHERE HEREEEEEEEEEEEEEEEEEEEEEEEEEEE <- Just so you can see me :P
-			//ADCmain();
+			ADCmain();
 			len = format_resp_pdu(result);
 			mLED3_On()
 			OpenUART1(UART_EN, UART_TX_ENABLE, 25);

@@ -2,7 +2,7 @@
 #include "SensorProfiles.h"
 #include "modbus.h"
 #include "adc.h"
-#include "p24FJ256GB106.h"
+#include "p24F16KA102.h"
 
 #define SENSOR_ID 0xFA
 
