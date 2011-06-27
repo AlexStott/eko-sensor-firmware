@@ -2,11 +2,13 @@
 #include "SensorProfiles.h"
 #include "modbus.h"
 #include "adc.h"
-#include "p24F16KA102.h"
+#include "p24Fxxxx.h"
 
 #define SENSOR_ID 0xFA
 
-extern	unsigned int	data1[10];
+unsigned int message_count;
+unsigned int error_count;
+unsigned int crcfail_count;
 	
 int GetMsgLengthFromFunc(unsigned char func_code)
 {
@@ -99,15 +101,46 @@ int modbusRecvLoop(void)
 
 pduErrorType process_mb_function04(unsigned int start_reg, unsigned int count)
 {
-	unsigned int start_index, i;
-	start_index = start_reg - MB04_OFFSET;
-	for (i = 0; i < count; i++)
+	unsigned int start_index, i, adc_channel;
+	// Figure out which block it is in (i2c, analog)
+	if ((start_reg >= 0x5000) && (start_reg <= 0x53FF))
 	{
-		mb_resp_pdu.data[2*i] = data1[i] >> 8;
-		mb_resp_pdu.data[2*i+1] = (unsigned char)(data1[i] & 0x00ff);
+		// Sequential read from EEPROM
+		return INTERNAL_ERR;
 	}
-	mb_resp_pdu.data_length = 2*count;
-	return MSG_OK;
+	else if ((start_reg >= 0x4000) && (start_reg <= 0x4FFF))
+	{
+		ADCmain();
+		// Sequential read from ADC buffers	
+		// figure out which ADC channel
+		adc_channel = (start_reg & 0x0F00) >> 8;
+		// start address
+		start_index = (start_reg & 0x00FF);
+		// check bounds
+		if (adc_channel >= 3) return ADDR_ERROR;
+		if ((start_index+count) > MAX_DATA_LENGTH) return ADDR_ERROR;
+		
+		for (i = 0; i < count; i++)
+		{
+			mb_resp_pdu.data[2*i] = analog_buffer[adc_channel][start_index+i] >> 8;
+			mb_resp_pdu.data[2*i+1] = (unsigned char)(analog_buffer[adc_channel][start_index+i] & 0x00ff);
+		}
+		mb_resp_pdu.data_length = 2*count;
+		return MSG_OK;
+	}
+	#ifdef SENSORKIT_ATMOS_R1
+	else if ((start_reg == 0x5400) || (start_reg == 0x5401) || (start_reg == 0x5500))
+	{
+		// Read from atmos kit
+		return INTERNAL_ERR;
+	} 
+	#endif
+	else
+	{
+		// data address outside bounds
+		return ADDR_ERROR;
+	}
+	
 }
 
 pduErrorType process_req_pdu(void)
@@ -150,7 +183,7 @@ unsigned char format_resp_pdu(pduErrorType status)
 		tx_buffer[3+mb_resp_pdu.data_length+2] = '\0';
 		return 3+mb_resp_pdu.data_length+2;
 	}
-	else
+	else if (status > 0)
 	{
 		tx_buffer[1] = tx_buffer[1] | 0x80;
 		tx_buffer[2] = (unsigned char)status;
@@ -158,6 +191,10 @@ unsigned char format_resp_pdu(pduErrorType status)
 		tx_buffer[3] = (unsigned char)(crc16 & 0x00ff);
 		tx_buffer[4]	   = (unsigned char)(crc16 >> 8);
 		return 5;
+	} else
+	{
+		// do nothing if its a CRC failure
+		return 0;
 	}
 }
 
@@ -188,4 +225,12 @@ pduErrorType check_req_pdu(unsigned int pduLength)
 	if (!check_function_supported(mb_req_pdu.function)) return FUNC_UNSUPPORTED;
 	
 	return MSG_OK;
+}
+
+void modbus_init(void)
+{
+	unsigned int message_count;
+	unsigned int error_count;
+	unsigned int crcfail_count;
+	//modbus_address = read_config(0x00);
 }

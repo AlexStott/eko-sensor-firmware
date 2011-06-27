@@ -8,8 +8,8 @@
 			#error "Check MCU Selection"
 		#endif
 		
-		#include "p24FJ256GB106.h"
 		
+		#include "p24Fxxxx.h"
 
 		
 		/* Configuration Bit defaults for platform */
@@ -30,8 +30,8 @@
 			#error "Check MCU Selection"
 		#endif
 		
-		#include "p24F16KA102.h"
 		
+		#include "p24Fxxxx.h"
 
 		
 		/* Select the FRC oscillator, disable two speed startup */

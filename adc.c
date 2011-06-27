@@ -4,6 +4,13 @@
 #include "adc.h"
 #include "p24F16KA102.h"
 
+
+
+
+// allocate buffers for AN0, AN1, AN5
+unsigned int	analog_buffer[3][32];
+
+
 //declare variables
 unsigned int data;
 
@@ -15,7 +22,7 @@ void ADCInit()
 	//Use system clock, set TAD = TCY
    AD1CON3 = 0x0000;
 	//Set input channel
-   AD1CHS = 0x0000;
+   AD1CHS = VSAMP_CH;
 	//Set all inputs to analog
    AD1PCFG = 0x0000;  
    //No scanned inputs
@@ -58,24 +65,21 @@ void ADCmain()
 		TMR1=0;
 		//VOLTAGE ADC
 		//start sampling and wait for 4 instruction clock cycles.
-		AD1CON1bits.SAMP = 1;
-		for (k=0;k<5;k++);
+		//AD1CON1bits.SAMP = 1;
+		//for (k=0;k<5;k++);
 		//stop sampling, conversion automatically starts
-		AD1CON1bits.SAMP = 0; 
-		Vbuff[i] = ADCProcessEvents();
-
+		//AD1CON1bits.SAMP = 0; 
+		//analog_buffer[VBUFF_IDX][i] = ADCProcessEvents();
+		
+		sample_adc_channel(VSAMP_CH, VBUFF_IDX, i, 5);
+		
+		
 		for(k=0;k<100;k++)
 		
 		//CURRENT ADC
 		//switch input to current pin
-		AD1CHS = 0x0005;
+		sample_adc_channel(ISAMP_CH, IBUFF_IDX, i, 5);
 		
-		AD1CON1bits.SAMP = 1;
-		for (k=0;k<5;k++);
-		AD1CON1bits.SAMP = 0;
-		Ibuff[i] = ADCProcessEvents();
-		//switch input pin back to voltage pin	
-		AD1CHS = 0x0000;
 		//wait for a delay of 2.5ms before taking next sample
 		while (TMR1 <= 40);
 			
@@ -86,4 +90,14 @@ void ADCmain()
 	T1CONbits.TON = 0;
 		
 	return;
+}
+
+void sample_adc_channel(unsigned int channel, unsigned char buf_num, unsigned int bufnum_idx, unsigned char sh_cycles)
+{
+		int k;
+		AD1CHS = channel;
+		AD1CON1bits.SAMP = 1;
+		for (k=0;k<sh_cycles;k++);
+		AD1CON1bits.SAMP = 0;
+		analog_buffer[buf_num][bufnum_idx] = ADCProcessEvents();
 }

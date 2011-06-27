@@ -72,9 +72,9 @@ file_005=main.h
 file_006=HardwareProfiles.h
 file_007=SensorProfiles.h
 file_008=global.h
-file_009=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\h\p24F16KA102.h
-file_010=adc.h
-file_011=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
+file_009=adc.h
+file_010=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\h\p24Fxxxx.h
+file_011=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=

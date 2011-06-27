@@ -128,14 +128,7 @@ int main(void)
 	#endif
 	init_status_leds();
 	
-	data1[0] = 0x1234;
-	data1[1] = 0x5678;
-	data1[2] = 0x9ABC;
-	data1[3] = 0xDEF0;
-	data1[4] = 0xAAAA;
-	data1[5] = 0xBBBB;
-	data1[6] = 0xCCCC;
-	data1[7] = 0xDDDD;
+
 	
 	while (1)
 	{
@@ -162,7 +155,8 @@ int main(void)
 				result = process_req_pdu();
 			
 			//CALL ADC SOMEWHERE HEREEEEEEEEEEEEEEEEEEEEEEEEEEE <- Just so you can see me :P
-			ADCmain();
+			
+			
 			len = format_resp_pdu(result);
 			mLED3_On()
 			OpenUART1(UART_EN, UART_TX_ENABLE, 25);

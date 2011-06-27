@@ -3,8 +3,8 @@
 #define MODBUS_NOT_ADDR				-1
 #define MODBUS_UNKNOWN_FUNC		-10
 
-#define MB04_OFFSET						0x300
-#define MB04_LENGTH						0x0FF
+#define MB04_OFFSET						0x4000
+#define MB04_LENGTH						0x1FFF
 #define MB04_END							MB04_OFFSET + MB04_LENGTH
 
 typedef struct 
@@ -29,14 +29,22 @@ typedef enum {
 
 typedef enum  {
   MSG_OK = 0,
-  CRC_FAIL,
-  MSG_LEN_ERROR,
-  FUNC_UNSUPPORTED,
-  PARAM_ERROR,
-  INTERNAL_ERR
+  CRC_FAIL = -2,
+  MSG_LEN_ERROR = -1,
+  FUNC_UNSUPPORTED = 1,
+  PARAM_ERROR = 3,
+  INTERNAL_ERR = 4,
+  ADDR_ERROR = 2
 } pduErrorType;
 
-extern slaveStateType 	mb_state;					 // enum type for state
+
+extern unsigned int message_count;
+extern unsigned int error_count;
+extern unsigned int crcfail_count;
+
+extern unsigned char modbus_address;
+
+extern slaveStateType 		mb_state;					 // enum type for state
 extern pduType 				mb_req_pdu; 			// pdu holding struct
 extern pduType 				mb_resp_pdu;
 
