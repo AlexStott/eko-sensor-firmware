@@ -14,7 +14,7 @@
  */
  
 /* MODBUS addresses for sensor data buffers */
-#define AN_BASE			    0x4000
+#define AN_BASE			   		 0x4000
 #define AN0_OFFSET			0x0000
 #define AN1_OFFSET			0x0100
 #define AN5_OFFSET			0x0500
@@ -26,8 +26,7 @@
 #define I2C_EEPROM_BLK4		0x5300
 
 
-#define I2C_TSL2561_A0		0x5400
-#define I2C_TSL2561_A1		0x5401
+#define I2C_TSL2561_LUX		0x5400
 
 #define I2C_MCP9800_TA		0x5500
 
@@ -36,18 +35,26 @@
 #define SUPPORT_MB06 // Support write to single register
 
 #ifdef SENSORKIT_EKO_TEST
-	#define MODBUS_ID 0xFA // fixme
+	#define TYPE_CODE 0x0000
+	#define MODBUS_ID 0x01 // fixme
 #endif
 
 #ifdef SENSORKIT_DCPWR_R1
-	#define MODBUS_ID 0xFB
+	#define TYPE_CODE 0x00DC
+	#define MODBUS_ID 0x02
 #endif
 
 #ifdef SENSORKIT_ACPWR_R1
-	#define MODBUS_ID 0xFC
+	#define TYPE_CODE 0x00AC
+	#ifdef ALT_ID
+		#define MODBUS_ID 0x05
+	#else
+		#define MODBUS_ID 0x08
+	#endif
 #endif
 
 #ifdef SENSORKIT_ATMOS_R1
-	#define MODBUS_ID 0xFD
+	#define MODBUS_ID 0x10
+	#define TYPE_CODE 0x00A1
 #endif
 

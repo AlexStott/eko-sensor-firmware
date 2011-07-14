@@ -1,7 +1,12 @@
 
 //define Voltage & Current Input Pins
-#define VSAMP_CH 			0x0000	//select Voltage input
-#define ISAMP_CH		0x0005	//select Current input
+#ifdef SENSORKIT_DCPWR_R1
+	#define VSAMP_CH 		0x0005	//select Voltage input
+	#define ISAMP_CH		0x0001	//select Current input
+#else
+	#define VSAMP_CH		0x0000
+	#define ISAMP_CH		0x0001
+#endif
 
 // buffer indices for voltage and current samples
 #define	VBUFF_IDX	0
@@ -12,9 +17,8 @@
 #define dataLength 	32
 
 //data buffers variables
-extern unsigned int	Vbuff[dataLength];
-extern unsigned int	Ibuff[dataLength];
-extern unsigned int analog_buffer[3][32];
+extern unsigned int analog_buffer[3][dataLength];
+
 //functions
 void ADCInit(void);
 int ADCProcessEvents(void);

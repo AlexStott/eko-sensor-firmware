@@ -3,22 +3,21 @@
 #include "global.h"
 #include "HardwareProfiles.h"
 #include "SensorProfiles.h"
-
+#include "eko_i2c_sensors.h"
+#include "i2c_engscope.h"
 #include "modbus.h"
 #include "adc.h"
 #include <uart.h>
 #include <timer.h>
-#include "eko_i2c_sensors.c"
+//#include "eko_i2c_sensors.h"
 
 #include "crc_tables.h"
 
 
-extern	unsigned int	data1[10];
-	
 // Configs defined in HardwareProfiles.h
 
 // MODBUS specific structs and states
-slaveStateType 	mb_state; 				// enum type for state
+slaveStateType 		mb_state; 				// enum type for state
 pduType 			mb_req_pdu; 			// pdu holding struct
 pduType 			mb_resp_pdu;
 
@@ -35,8 +34,8 @@ unsigned char tx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b)
 //  Timeout
 void __attribute__ ((interrupt,no_auto_psv)) _T1Interrupt (void)
 {
-   T1_Clear_Intr_Status_Bit;
-//	if (mb_state == SLAVE_RECEIVING)
+		T1_Clear_Intr_Status_Bit;
+		//	if (mb_state == SLAVE_RECEIVING)
 		mb_req_timeout = 1;
 	
 }
@@ -94,24 +93,13 @@ void init_status_leds()
 		TRISGbits.TRISG6 = 0;
 		TRISGbits.TRISG8 = 0;
 	#endif
+	
+	#ifdef TARG_EKOBB_R1
+		TRISAbits.TRISA2 = 0;
+		TRISAbits.TRISA3 = 0;
+	#endif
 }
 
-void status_leds_off()
-{
-	mLED1_Off()
-	mLED2_Off()
-	mLED3_Off()
-}
-
-void status_leds_frame_on()
-{
-	mLED1_On()
-}
-
-void status_leds_frame_off()
-{
-	mLED1_Off()
-}
 
 //main loop
 int main(void)
@@ -127,24 +115,39 @@ int main(void)
 		RPINR18bits.U1RXR = 3;
 		RPOR2bits.RP4R = 3;
 	#endif
+	
+	#ifdef TARG_EKOBB_R1
+		// Set UART_RTS pin as digital output
+		TRISBbits.TRISB8 = 0;
+
+		// Set UART_RTS pin high, schematic defect in R1 and R2 means inverted from H/W sense
+		LATBbits.LATB8 = 1;
+		
+		// Set UART_TX pin as digital output
+		TRISBbits.TRISB7 = 0;
+		
+		// Set UART_RX pin as digital input
+		TRISBbits.TRISB2 = 1;
+	#endif
+	
 	init_status_leds();
 
-	mLED1_On()
-	mLED2_On()
-
+	AD1PCFG = 0xFFFF;
 	#ifdef SENSORKIT_ATMOS_R1
-	mcp9800_init();
-	tsl2561_init();
+		i2c_init(89);	
+		mcp9800_init();
+		tsl2561_init();
 	#endif
 
+	// Initialise UART
+	U1BRG = 25; // thats 9600bps with 8MHz FRC no post-scale/PLL
+	U1MODE = 0x8000; // Enable UART
+	U1STA = 0x0400; // Enable transmit and enable interrupt
+	//IFS0bits.U1RXIF = 0;
 	while (1)
 	{
-		OpenUART1(UART_EN, UART_TX_ENABLE, 25);
-		ConfigIntUART1(UART_RX_INT_DIS | UART_TX_INT_DIS);
-
-		mLED1_Off()
-		mLED2_Off()
-
+		//IFS0bits.U1RXIF = 0;
+		UART_RTS = 1; // Set SP483 to rx mode
 		
 		//Setup Timeout timer, start disabled
 		init_mb_timeout_timer(20000);
@@ -152,28 +155,29 @@ int main(void)
 		// Block until we hear something on the UART
 		len = modbusRecvLoop();
 		
-		CloseUART1();
 		// if len = MODBUS_NOT_ADDR, then skip processing
-		if (len != MODBUS_NOT_ADDR)
+		//if (len != MODBUS_NOT_ADDR)
+		if (rx_buffer[0] == MODBUS_ID)
 		{
 			result = check_req_pdu(len);
 			
 			if (result == MSG_OK) 
 				result = process_req_pdu();
 			
-			//CALL ADC SOMEWHERE HEREEEEEEEEEEEEEEEEEEEEEEEEEEE <- Just so you can see me :P
-			
-			
 			len = format_resp_pdu(result);
-			mLED3_On()
-			OpenUART1(UART_EN, UART_TX_ENABLE, 25);
-			ConfigIntUART1(UART_RX_INT_DIS | UART_TX_INT_DIS);
+			//frame LED on
 			
+			//OpenUART1(UART_EN, UART_TX_ENABLE, 25);
+			//ConfigIntUART1(UART_RX_INT_DIS | UART_TX_INT_DIS);
+			
+			// Set SP483 to tx mode
+			UART_RTS = 0;
+//			
 			init_mb_timeout_timer(6400);
 			start_mb_timeout_timer();
 			while(!mb_req_timeout);
 			close_mb_timeout_timer();
-			
+			mLED2_On()
 			//putsUART1((unsigned int *) tx_buffer);
 
 			for (i = 0; i < len+1; i++)
@@ -183,14 +187,23 @@ int main(void)
 			//state = transmitPDU(void);
 			
 			//WriteUART1('A');
-			//	LATFbits.LATF4 = 0;
+			//LATFbits.LATF4 = 0;
 			//	LATGbits.LATG6 = 0;
 			//	LATGbits.LATG8 = 1;
 			//while (TMR1 < 20000);
-			mLED3_Off()
+			// frame LED off
+		
 			//TMR1 = 0x0000;
-			CloseUART1();
 		}
+		else
+		{
+				init_mb_timeout_timer(2000);
+				start_mb_timeout_timer();
+				status_leds_frame_off();
+				while(!mb_req_timeout);
+		}
+		//LATAbits.LATA2 = 1;
+		//mLED2_Off()
 	}
 }
 
@@ -214,23 +227,19 @@ unsigned char rdyByte()
 }
 
 
-void DebugLED1()
+void status_leds_off()
 {
-	mLED1_On()
-	mLED2_Off()
-	mLED3_Off()
+       mLED1_Off()
+       mLED2_Off()
+       mLED3_Off()
 }
 
-void DebugLED2()
+void status_leds_frame_on()
 {
-	mLED1_Off()
-	mLED2_On()
-	mLED3_Off()
+        mLED2_On()
 }
 
-void DebugLED3()
+void status_leds_frame_off()
 {
-	mLED1_Off()
-	mLED2_Off()
-	mLED3_On()
+        mLED2_Off()
 }

@@ -31,14 +31,14 @@
 		#endif
 		
 		
-		#include "p24Fxxxx.h"
+		#include "p24F16KA102.h"
 
 		
 		/* Select the FRC oscillator, disable two speed startup */
 		_FOSCSEL(FNOSC_FRC & IESO_OFF)
 		
 		/* Disable clock switching, enable clock monitor, low power secondary, OSCO pins for DIO */
-		_FOSC( FCKSM_CSDCMD & SOSCSEL_SOSCLP & OSCIOFNC_ON & POSCMOD_NONE)
+		_FOSC( FCKSM_CSDCMD & OSCIOFNC_ON & POSCMOD_NONE)
 		
 		/* Disable WDT. We may need this, but have yet to decide when to kick the dog */
 		_FWDT(FWDTEN_OFF & WINDIS_OFF)
@@ -49,6 +49,7 @@
 		#define mLED1					LATAbits.LATA2	// Red
 		#define mLED2					LATAbits.LATA3	// Amber
 		#define mLED3					LATBbits.LATB14 // Not populated
+		#define UART_RTS				LATBbits.LATB8
 	#else
 		#error "Define Target Platform"
 	#endif

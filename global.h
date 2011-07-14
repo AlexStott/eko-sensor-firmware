@@ -8,8 +8,8 @@
 // compile for the starter kit platform
 #define TARG_EKOBB_R1
 // compile for the test sensor kit
-#define SENSORKIT_EKO_TEST
-
+#define SENSORKIT_ACPWR_R1
+#define ALT_ID
 // eg: some configurations (instead of the above)
 /*
 #define TARG_EKOBB_R1
