@@ -1,7 +1,7 @@
 [HEADER]
 magic_cookie={66E99B07-E706-4689-9E80-9B2582898A13}
 file_version=1.0
-device=PIC24FJ256GB106
+device=PIC24F16KA102
 [PATH_INFO]
 BuildDirPolicy=BuildDirIsProjectDir
 dir_src=
@@ -27,26 +27,18 @@ subfolder_lkr=
 file_000=.
 file_001=.
 file_002=.
-file_003=.
-file_004=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
 file_002=no
-file_003=no
-file_004=no
 [OTHER_FILES]
 file_000=no
 file_001=no
 file_002=no
-file_003=no
-file_004=no
 [FILE_INFO]
-file_000=adc.c
-file_001=main.c
-file_002=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\h\p24FJ256GB106.h
-file_003=adc.h
-file_004=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24FJ256GB106.gld
+file_000=main.c
+file_001=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\h\p24F16KA102.h
+file_002=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
