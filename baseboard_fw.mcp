@@ -8,7 +8,7 @@ dir_src=
 dir_bin=
 dir_tmp=
 dir_sin=
-dir_inc=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\h
+dir_inc=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\h
 dir_lib=
 dir_lkr=
 [CAT_FILTERS]
@@ -102,7 +102,7 @@ file_014=include\global.h
 file_015=include\i2c_engscope.h
 file_016=include\main.h
 file_017=include\modbus.h
-file_018=C:\Program Files (x86)\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
+file_018=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=

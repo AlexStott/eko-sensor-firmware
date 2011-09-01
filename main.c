@@ -9,6 +9,7 @@
  * ********************************************************************* *
  */
 #define USE_AND_OR
+
 #define TARGET_EKOBB_R3
 #include "board/chip.h"
 #include "board/p24_fuses.h"
@@ -21,68 +22,59 @@
 //mb crc tables
 #include "include/crc_tables.h"
 
-unsigned char rxbuf[64];
+unsigned char rxbuf[10];
 unsigned char txbuf[64];
-unsigned char rx_msg_len;
+
+unsigned char rx_msg;
 unsigned char error_code;
 
 void init_uart1(int BRG)
 {
-	U1MODE = 0x8B00; /* Enable UART, set RTS to simplex */
+	U1MODE = 0x8000; /* Enable UART, set RTS to simplex */
 	U1STA = 0x0400; /* Enable transmit */
+	IFS0bits.U1RXIF = 0;	
+	IPC2bits.U1RXIP = 6;
+	IEC0bits.U1RXIE = 1;
 	U1BRG = BRG;
 }
 
-void read_uart1_pdu( void )
+void __attribute__ ((interrupt,no_auto_psv)) _U1RXInterrupt(void)
 {
-	rx_msg_len = 0; // reset index to zero
-
-	/* we use TIMER2 to detect a 4ms (3.5char 9600bps) interval after frame */
-	TMR2 = 0x0000;
-	T2CON = 0x8030; /* enable timer 2 with 1:256 prescale */
-	/* at 8Mhz Fosc, timer tick is 0.064ms, so 4ms = 63 */
-
-	while (T2CON < 63)
-	{
-		if (U1STAbits.URXDA)
-		{
-			rxbuf[rx_msg_len++] = (unsigned char)(0x00FF & U1RXREG);
-			TMR2 = 0x0000;
-			mLED1 = U1STAbits.OERR;
-		}
-		if (rx_msg_len > 63) return;
-	}
+    // for function codes 0x01 to 0x06, the expected length is 8.
+    // we only support functions 0x01 to 0x06. 
+	static UINT j=0;
 	
-	//msg in buffer, rx_msg_len is up to date
-	return;
-}
-
-void write_uart1_pdu( int pduLen )
-{
-	while (pduLen != 0)
+	U1RX_Clear_Intr_Status_Bit;
+ 	
+	while(!U1STAbits.URXDA);
+    rxbuf[j++] = (U1RXREG & 0xFF);
+    
+	if(j >= 8) /* limitation */
 	{
-		pduLen--;
-		while (U1STAbits.UTXBF);
-		U1TXREG = (0x00FF & txbuf[pduLen]);
+		rx_msg=1; // flag that a pdu is recvd
+		IEC0bits.U1RXIE = 0; //disable interrupt
 	}
-	return;
 }
 
 int main (void)
 {
-	init_uart1(25);
-	mInitLED();
+	AD1PCFG = 0xFFFF;
 	TRISBbits.TRISB2 = 1; // In
 	TRISBbits.TRISB7 = 0; // Out
 	TRISBbits.TRISB8 = 0;
-	while(1)
-	{
+	LATBbits.LATB8 = 0;
+	
 
-		if (U1STAbits.URXDA)
-		{
-			read_uart1_pdu();
-			mLED2_On();
-		}
+	mInitLED();
+	
+	while(1)
+	{	
+		// init uart and interrupts
+		rx_msg = 0;
+		init_uart1(25);
+		while (!rx_msg);
+		// message recvd. in rxbuf.
+		
 	}
 }
 
