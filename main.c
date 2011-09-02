@@ -29,39 +29,32 @@ unsigned char txbuf[64];
 unsigned char rx_msg;
 unsigned char error_code;
 
-unsigned char j = 0;
 
 void init_uart1(int BRG)
 {
 	U1MODE = 0x8000; /* Enable UART, set RTS to simplex */
 	U1STA = 0x0400; /* Enable transmit */
-	IFS0bits.U1RXIF = 0;	
-	IPC2bits.U1RXIP = 6;
-	IEC0bits.U1RXIE = 1;
 	U1BRG = BRG;
-}
-
-void __attribute__ ((interrupt,no_auto_psv)) _U1RXInterrupt(void)
-{
-    // for function codes 0x01 to 0x06, the expected length is 8.
-    // we only support functions 0x01 to 0x06. 
-	
-	U1RX_Clear_Intr_Status_Bit;
- 	
-	while(!U1STAbits.URXDA);
-    rxbuf[j++] = (U1RXREG & 0xFF);
-    
-	if(j >= 8) /* limitation */
-	{
-		rx_msg=1; // flag that a pdu is recvd
-		IEC0bits.U1RXIE = 0; //disable interrupt
-		j = 0;
-	}
 }
 
 void error_led_on( void )
 {
 	mLED2_On()
+}
+
+char get_msg( void )
+{
+	rx_msg = 0;
+	while (!U1STAbits.URXDA);
+	TMR2 = 0x0000;
+	T2CON = 0x8030;
+	while ( (rx_msg <= 8) )
+	{
+		rxbuf[rx_msg++] = (0x00FF & U1RXREG);
+		TMR2 = 0;
+	}
+	T2CON = 0x0000;
+	return rx_msg;
 }
 
 int main (void)
@@ -84,7 +77,7 @@ int main (void)
 		init_uart1(25);
 		mLED1 = 0;
 		mLED2 = 0;
-  		while (!rx_msg);
+  		get_msg();
 		// message recvd. in rxbuf.
 		temp = validate_pdu(rxbuf);
 
