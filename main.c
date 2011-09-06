@@ -8,6 +8,7 @@
  *																		 *
  * ********************************************************************* *
  */
+
 #define USE_AND_OR
 #define EN_CFG_EEPROM
 
@@ -18,23 +19,44 @@
 #include "include/tmr2delay.h"
 #include "include/mb_crc16.h"
 #include "include/i2c.h"
-//p24 libs
-#include <uart.h>
 
+/**
+ * Cycle Clock Frequency.
+ * FCY = FOSC/2 for use in timing routines. 
+ */
 #define FCY		(4000000)
+
+/**
+ * Default device address.
+ */
 #define DEFAULT_ADDR 0x01
 
+/* Buffer sizes */
+#define RX_BUF_MAX		25 /*!< Receive Buffer Size. limited to 16 bytes data + 9 bytes mb stuff. */
+#define TX_BUF_MAX		70 /*!< Transmit Buffer Size. limited to 32 words data + 5 bytes mb stuff. */
+#define DATA_BUF_SIZE	64 /*!< Data Buffer Size. eg: capable of 16 samples per input accross 4 inputs. */
 
-#define RX_BUF_MAX	32
-#define TX_BUF_MAX	64
-
+/**
+ * Modbus device address.
+ * Modbus device adddress as loaded from EEPROM.
+ */
 unsigned char mb_addr;
 
-unsigned char rxbuf[RX_BUF_MAX];
-unsigned char txbuf[TX_BUF_MAX];
-unsigned char cfgbuf[11];
+/* transmit and receive buffers */
+unsigned char rxbuf[RX_BUF_MAX]; /*!< UART receive buffer. */
+unsigned char txbuf[TX_BUF_MAX]; /*!< UART transmit buffer. */
 
-unsigned char rx_len;
+/* bytes in rx buffer */
+unsigned char rx_len; /*!< Received byte count. Bytes read consecutively from UART before threshold or timeout. */
+
+
+/* main data buffer */
+unsigned int  databuf[DATA_BUF_SIZE]; /*!< Analogue data buffer. */
+
+/**
+ * Configuration data buffer.
+ */
+unsigned char cfgbuf[11];
 
 
 void __attribute__((interrupt, auto_psv)) _DefaultInterrupt(void)
@@ -84,6 +106,10 @@ void __attribute__((interrupt, auto_psv)) _MathError(void)
   }
 }
 
+/**
+ * Initialise routine for UART1.
+ * @param BRG the baud rate clock count value as calculated from FCY and desired serial baudrate.
+ */
 void init_uart1(int BRG)
 {
 	U1BRG = BRG;
@@ -91,11 +117,17 @@ void init_uart1(int BRG)
 	U1STA = 0x0400; /* Enable transmit */
 }
 
+/**
+ * Turn error led on.
+ */
 void error_led_on( void )
 {
 	mLED2_On()
 }
 
+/**
+ * Block until UART receives modbus message.
+ */
 char get_msg( void )
 {
 	unsigned char idx = 0;
@@ -226,7 +258,7 @@ int main (void)
 			mLED2 = 0; // reset error led
 			// message is known good!
 			mLED1 = 1; // frame led on
-			temp = process_pdu(rxbuf, txbuf);
+			temp = process_pdu(rxbuf, txbuf, databuf);
 		
 	
 			/* Transmit Response */
