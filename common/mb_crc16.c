@@ -43,7 +43,6 @@ static char auchCRCLo[] = {
 }; 
 
 
-
 unsigned int calculate_crc16(unsigned char *puchMsg, unsigned int usDataLen)
 {
         unsigned char uchCRCHi = 0xFF ; /* high byte of CRC initialized  */ 

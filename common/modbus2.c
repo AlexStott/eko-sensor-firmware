@@ -4,17 +4,17 @@
 
 extern void error_led_on( void );
 
-char validate_pdu( unsigned char* ptr )
+char validate_pdu( unsigned char daddr, unsigned char msg_len, unsigned char* ptr )
 {
 	unsigned int crc16;
-	unsigned int temp;
+	// unsigned int temp;
 	// check address
-	if (ptr[0] != 0xAA) return 0;
+	if (ptr[0] != daddr) return 0;
 
 	// check CRC
-	crc16 = (((ptr[6] << 8) & 0xFF00) + (0x00FF & ptr[7]));
-	temp = calculate_crc16(ptr, 8);
-	if (crc16 != calculate_crc16(ptr, 8)) return -1;
+	crc16 = (((ptr[msg_len-1] << 8) & 0xFF00) + (0x00FF & ptr[msg_len-2]));
+	// temp = calculate_crc16(ptr, msg_len-2);
+	if (crc16 != calculate_crc16(ptr, msg_len-2)) return -1;
 
 	return 1;
 }
@@ -28,7 +28,7 @@ char response_exception( unsigned char* src, unsigned char* dest, unsigned char 
 	crc16_result = calculate_crc16(dest, 3);
 	dest[++idx] = (unsigned char)(crc16_result & 0x00FF);
 	dest[++idx] = (unsigned char)((crc16_result >> 8) & 0x00FF);
-	return ++idx;
+	return idx+1;
 }
 
 // returns number of bytes to transmit
@@ -62,6 +62,6 @@ char process_pdu( unsigned char* src, unsigned char* dest )
 			return response_exception(src, dest, SLAVE_DEVICE_FAILURE);
 			break;
 	}
-	return response_exception(src, dest, ACKNOWLEDGE);
+	return response_exception(src, dest, ILLEGAL_FUNCTION);
 }
 

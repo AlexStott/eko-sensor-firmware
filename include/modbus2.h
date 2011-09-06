@@ -13,7 +13,8 @@
 
 
 char response_exception( unsigned char* src, unsigned char* dest, unsigned char errcode);
-char validate_pdu( unsigned char* ptr );
+char validate_pdu( unsigned char daddr, unsigned char msg_len, unsigned char* ptr );
+
 char process_pdu( unsigned char* src, unsigned char* dest );
 
 
