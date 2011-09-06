@@ -41,3 +41,18 @@ static char auchCRCLo[] = {
 0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42, 0x43, 0x83, 0x41, 0x81, 0x80,
 0x40
 }; 
+
+
+unsigned int calculate_crc16(unsigned char *puchMsg, unsigned int usDataLen)
+{
+        unsigned char uchCRCHi = 0xFF ; /* high byte of CRC initialized  */ 
+        unsigned char uchCRCLo = 0xFF ; /* low byte of CRC initialized  */ 
+        unsigned int uIndex ; /* will index into CRC lookup table  */ 
+        while (usDataLen--) /* pass through message buffer  */ 
+        { 
+                uIndex = uchCRCLo ^ *puchMsg++ ;  /* calculate the CRC   */ 
+                uchCRCLo = uchCRCHi ^ auchCRCHi[uIndex] ; 
+                uchCRCHi = auchCRCLo[uIndex] ; 
+        } 
+        return (uchCRCHi << 8 | uchCRCLo);
+}

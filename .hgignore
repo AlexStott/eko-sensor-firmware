@@ -5,3 +5,6 @@ PIC_Slave.map
 PIC_Slave.cof
 PIC_Slave.mcs
 *.log
+baseboard_fw.cof
+baseboard_fw.hex
+baseboard_fw.map

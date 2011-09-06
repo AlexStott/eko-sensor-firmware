@@ -24,9 +24,7 @@ void ADCInit()
 	//Set input channel
    AD1CHS = VSAMP_CH;
 	//Set all inputs to analog
-   AD1PCFGbits.PCFG0 = 0;
-   AD1PCFGbits.PCFG1 = 0;
-   AD1PCFGbits.PCFG5 = 0;  
+   AD1PCFG = 0x0000;  
    //No scanned inputs
    AD1CSSL = 0;
    

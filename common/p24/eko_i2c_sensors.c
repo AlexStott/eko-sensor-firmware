@@ -1,5 +1,3 @@
-#ifndef EKO_I2C_SENSORS_H
-#define EKO_I2C_SENSORS_H
 
 #define FCY 2000000UL
 #include <libpic30.h>
@@ -30,7 +28,7 @@ int mcp9800_get_temp()
 	temp = I2Cread(I2C_MCP9800_ADDR, I2C_MCP9800_TA) << 8;
 	temp = temp + (0xFF & I2Cread(I2C_MCP9800_ADDR, I2C_MCP9800_TA));
 	sign = (temp & 0x8000) >> 15; // get MSB
-	if (!sign)
+	if (sign)
 	{
 		return ((0x7FFF & temp) >> 4);
 	} else
@@ -78,4 +76,3 @@ unsigned int tsl2561_get_lux()
 	return CalculateLux(0, 2, data0, data1, 0);
 }
 
-#endif

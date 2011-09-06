@@ -1,245 +1,252 @@
+/* ********************************************************************* *
+ * 				Energy Kiosk Observer : Sensor Firmware					 *
+ * 						Version 2 / Aug 2011							 *
+ *  																	 *
+ * ********************************************************************* *
+ * 		AUTHORS:		Charith Amarasinghe <ca508@ic.ac.uk>			 *
+ *						Gonzalo de Gisbert	<gdg90@ic.ac.uk>	         *
+ *																		 *
+ * ********************************************************************* *
+ */
 #define USE_AND_OR
+#define EN_CFG_EEPROM
 
-#include "global.h"
-#include "HardwareProfiles.h"
-#include "SensorProfiles.h"
-#include "eko_i2c_sensors.h"
-#include "i2c_engscope.h"
-#include "modbus.h"
-#include "adc.h"
+#include "board/chip.h"
+#include "board/p24_fuses.h"
+#include "board/p24_board.h"
+#include "include/modbus2.h"
+#include "include/tmr2delay.h"
+#include "include/mb_crc16.h"
+#include "include/i2c.h"
+//p24 libs
 #include <uart.h>
-#include <timer.h>
-//#include "eko_i2c_sensors.h"
 
-#include "crc_tables.h"
-
-
-// Configs defined in HardwareProfiles.h
-
-// MODBUS specific structs and states
-slaveStateType 		mb_state; 				// enum type for state
-pduType 			mb_req_pdu; 			// pdu holding struct
-pduType 			mb_resp_pdu;
+#define FCY		(4000000)
+#define DEFAULT_ADDR 0x01
 
 
-volatile unsigned char		mb_req_timeout = 0x00;
+#define RX_BUF_MAX	32
+#define TX_BUF_MAX	64
+
+unsigned char mb_addr;
+
+unsigned char rxbuf[RX_BUF_MAX];
+unsigned char txbuf[TX_BUF_MAX];
+unsigned char cfgbuf[11];
+
+unsigned char rx_len;
 
 
-// Receive and Transmit Buffers. MAX_DATA_LENGTH is defined in Modbus.h
-unsigned char rx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b) + CRC(2b)
-unsigned char tx_buffer[MAX_DATA_LENGTH+4]; // Data size + Addr (1b) + Func (1b) + CRC(2b)
-
-/* ISRs */
-
-//  Timeout
-void __attribute__ ((interrupt,no_auto_psv)) _T1Interrupt (void)
+void __attribute__((interrupt, auto_psv)) _DefaultInterrupt(void)
 {
-		T1_Clear_Intr_Status_Bit;
-		//	if (mb_state == SLAVE_RECEIVING)
-		mb_req_timeout = 1;
+  while (1)
+  {
+      Nop();
+      Nop();
+      Nop();
+  }
+}
+
+void __attribute__((interrupt, auto_psv)) _OscillatorFail(void)
+{
+  while (1)
+  {
+      Nop();
+      Nop();
+      Nop();
+  }
+}
+void __attribute__((interrupt, auto_psv)) _AddressError(void)
+{
+  while (1)
+  {
+      Nop();
+      Nop();
+      Nop();
+  }
+}
+void __attribute__((interrupt, auto_psv)) _StackError(void)
+{
+  while (1)
+  {
+      Nop();
+      Nop();
+      Nop();
+  }
+}
+void __attribute__((interrupt, auto_psv)) _MathError(void)
+{
+  while (1)
+  {
+      Nop();
+      Nop();
+      Nop();
+  }
+}
+
+void init_uart1(int BRG)
+{
+	U1BRG = BRG;
+	U1MODE = 0x8000; /* Enable UART */
+	U1STA = 0x0400; /* Enable transmit */
+}
+
+void error_led_on( void )
+{
+	mLED2_On()
+}
+
+char get_msg( void )
+{
+	unsigned char idx = 0;
+	unsigned char thresh = 8;
+	unsigned char temp;
 	
-}
-
-
-/* MODBUS Message Timeout Timer */
-
-// initialises Timer1 for a timeout count
-void init_mb_timeout_timer(unsigned int timer_ticks)
-{
-	CloseTimer1();
-	mb_req_timeout = 0;
-	OpenTimer1(T1_OFF | T1_PS_1_256, timer_ticks);
-	ConfigIntTimer1(T1_INT_ON|T1_INT_PRIOR_1);
-}
-
-// start (or reset) a timeout timer
-void start_mb_timeout_timer()
-{
-	T1CONbits.TON = 1;
-	TMR1 = 0x00;
-}
-
-// close a timer (disable interrupts, disable timer.
-void close_mb_timeout_timer()
-{
-	IEC0bits.T1IE = 0;      /* Disable the Timer1 interrupt */
-    T1CONbits.TON = 0;      /* Disable timer1 */
-    IFS0bits.T1IF = 0;      /* Clear Timer interrupt flag */
-	mb_req_timeout = 0;
-}
-
-/* MODBUS CRC calculation PIC24F S/W */
-
-unsigned int calculate_crc16(unsigned char *puchMsg, unsigned int usDataLen)
-{
-	unsigned char uchCRCHi = 0xFF ; /* high byte of CRC initialized  */ 
-	unsigned char uchCRCLo = 0xFF ; /* low byte of CRC initialized  */ 
-	unsigned int uIndex ; /* will index into CRC lookup table  */ 
-	while (usDataLen--) /* pass through message buffer  */ 
-	{ 
-		uIndex = uchCRCLo ^ *puchMsg++ ;  /* calculate the CRC   */ 
-		uchCRCLo = uchCRCHi ^ auchCRCHi[uIndex] ; 
-		uchCRCHi = auchCRCLo[uIndex] ; 
-	} 
-	return (uchCRCHi << 8 | uchCRCLo);
-}
-
-/* Status LEDs */
-
-void init_status_leds()
-{
-	#ifdef TARG_PIC24F_SK
-		TRISFbits.TRISF4 = 0;
-		TRISGbits.TRISG6 = 0;
-		TRISGbits.TRISG8 = 0;
-	#endif
+	// wait until data available bit is set
+	while ( !U1STAbits.URXDA  ) {}
 	
-	#ifdef TARG_EKOBB_R1
-		TRISAbits.TRISA2 = 0;
-		TRISAbits.TRISA3 = 0;
-	#endif
-}
-
-
-//main loop
-int main(void)
-{
-	pduErrorType result;
-    unsigned int len = 0;
-	unsigned int i;
-	// Set up Clock
-	OSCCON	=	0x11C0;	 //select INTERNAL RC, Post Scale PPL (fixme)
+	// Use TMR2 for timeout of around 10ms
+	TMR2 = 0;
+	T2CON = 0x8030; // 1:256 prescale, enable tmr2
 	
-	#ifdef TARG_PIC24F_SK
-		// Development Kit needs port mapping
-		RPINR18bits.U1RXR = 3;
-		RPOR2bits.RP4R = 3;
-	#endif
-	
-	#ifdef TARG_EKOBB_R1
-		// Set UART_RTS pin as digital output
-		TRISBbits.TRISB8 = 0;
-
-		// Set UART_RTS pin high, schematic defect in R1 and R2 means inverted from H/W sense
-		LATBbits.LATB8 = 1;
-		
-		// Set UART_TX pin as digital output
-		TRISBbits.TRISB7 = 0;
-		
-		// Set UART_RX pin as digital input
-		TRISBbits.TRISB2 = 1;
-	#endif
-	
-	init_status_leds();
-
-	AD1PCFG = 0xFFFF;
-	#ifdef SENSORKIT_ATMOS_R1
-		i2c_init(89);	
-		mcp9800_init();
-		tsl2561_init();
-	#endif
-
-	// Initialise UART
-	U1BRG = 25; // thats 9600bps with 8MHz FRC no post-scale/PLL
-	U1MODE = 0x8000; // Enable UART
-	U1STA = 0x0400; // Enable transmit and enable interrupt
-	//IFS0bits.U1RXIF = 0;
-	while (1)
+ 	while ( (idx < thresh) && (TMR2 < 150) && (idx < RX_BUF_MAX) )
 	{
-		//IFS0bits.U1RXIF = 0;
-		UART_RTS = 1; // Set SP483 to rx mode
-		
-		//Setup Timeout timer, start disabled
-		init_mb_timeout_timer(20000);
-		
-		// Block until we hear something on the UART
-		len = modbusRecvLoop();
-		
-		// if len = MODBUS_NOT_ADDR, then skip processing
-		//if (len != MODBUS_NOT_ADDR)
-		if (rx_buffer[0] == MODBUS_ID)
+		// empty buffer while data available
+		while(U1STAbits.URXDA)
 		{
-			result = check_req_pdu(len);
-			
-			if (result == MSG_OK) 
-				result = process_req_pdu();
-			
-			len = format_resp_pdu(result);
-			//frame LED on
-			
-			//OpenUART1(UART_EN, UART_TX_ENABLE, 25);
-			//ConfigIntUART1(UART_RX_INT_DIS | UART_TX_INT_DIS);
-			
-			// Set SP483 to tx mode
-			UART_RTS = 0;
-//			
-			init_mb_timeout_timer(6400);
-			start_mb_timeout_timer();
-			while(!mb_req_timeout);
-			close_mb_timeout_timer();
-			mLED2_On()
-			//putsUART1((unsigned int *) tx_buffer);
+			rxbuf[idx++] = (unsigned char)(0x00FF & U1RXREG);
+		}
+		// check for function code 16
+		if ((idx == 7) && (rxbuf[2] == 0x10))
+		{
+			// set pdu length for extra bytes
+			thresh = 9 + rxbuf[6];
+		}
+		TMR2 = 0;
+	}
+	
+	// disable timer
+	T2CON = 0x0000;
 
-			for (i = 0; i < len+1; i++)
-			{
-			txByte(0x00FF & tx_buffer[i]);    /* transfer data word to TX reg */
-			}
-			//state = transmitPDU(void);
-			
-			//WriteUART1('A');
-			//LATFbits.LATF4 = 0;
-			//	LATGbits.LATG6 = 0;
-			//	LATGbits.LATG8 = 1;
-			//while (TMR1 < 20000);
-			// frame LED off
+	// flush buffer of extra data
+	while( U1STAbits.URXDA )
+	{
+		temp = (unsigned char)(0x00FF & U1RXREG); // dump extra characters
+	}
+
+	return idx;
+}
+
+void init_ports( void )
+{
+	// TRIS Settings for UART
+	//#ifdef TARGET_EKOBB_R3
+		TRISBbits.TRISB2 = 1; // In
+		TRISBbits.TRISB7 = 0; // Out
+		TRISBbits.TRISB8 = 0;
+	//#endif
+	
+	// TRIS Settings for I2C
+	//#ifdef TARGET_EKOBB_R3
+	//	TRISBbits.TRISB5 = 1;
+	//	TRISBbits.TRISB6 = 1;
+	//#endif
+
+	// Setup Analogue Ports:
+	//     Set TRIS bits to 1 (Input)
+	//	   Set AD1PCFG bits to 0 (ADC Input)
+	#ifdef TARGET_EKOdBB_R3
+		TRISAbits.TRISA0 = 1; // AN0
+		TRISAbits.TRISA1 = 1; // AN1
+		TRISBbits.TRISB0 = 1; // AN2
+		TRISBbits.TRISB1 = 1; // AN3
+		TRISBbits.TRISB3 = 1; // AN5
+		AD1PCFG = 0xFFC0; // AN0-AN3 and AN5 set as analogue
+	#endif
+}
+
+void load_cfg_from_eeprom( void )
+{
+	#ifdef EN_CFG_EEPROM
+	unsigned int cfg_crc;
+	InitI2C(); /* Initialise I2C at 100kHz @ 8Mhz FCY */
+	LDSequentialReadI2C(EE_ADDR_CFG, 0x00, cfgbuf, 11);
+	cfg_crc = calculate_crc16(cfgbuf, 9);
+	if (cfg_crc == ((((unsigned int)cfgbuf[10] << 8) & 0xFF00) + (unsigned int)cfgbuf[9]))
+	{
+		// Configure
+	}
+	else
+	{
+		error_led_on();
+	#endif
+		// Configure defaults
+	#ifdef EN_CFG_EEPROM
+	}
+	CloseI2C();
+	#endif
+}
+
+int main (void)
+{
+
+	unsigned char temp = 0;
+	unsigned char i;
+	
+	AD1PCFG = 0xFFFF; // All pins digital to begin
+
+	/* UART1_RTS aliases a digital output pin (PORTB5?),
+	   For the SP483E to transmit, set RTS pin high
+	   For receive set RTS low.
+       !!Tx FIFO is 4 bytes. After we write the last
+		4 bytes to the tx reg, keep RTS high for approx 10ms
+		for last few data bytes to transmit */  
+
+	UART1_RTS = 0; // Receiver Enabled
+	
+	init_ports();
+	mInitLED();
+	load_cfg_from_eeprom();
+
+	while(1)
+	{	
+		// init uart and interrupts
+		rx_len = 0;
+		init_uart1(25);
+		mLED1 = 0;
+		mLED2 = 0;
+  		//if (U1STAbits.URXDA)
+		rx_len = get_msg();
+		// message recvd. in rxbuf.
+		temp = validate_pdu(DEFAULT_ADDR, rx_len, rxbuf);
 		
-			//TMR1 = 0x0000;
-		}
-		else
+		
+		if (temp == 1)
 		{
-				init_mb_timeout_timer(2000);
-				start_mb_timeout_timer();
-				status_leds_frame_off();
-				while(!mb_req_timeout);
+			mLED2 = 0; // reset error led
+			// message is known good!
+			mLED1 = 1; // frame led on
+			temp = process_pdu(rxbuf, txbuf);
+		
+	
+			/* Transmit Response */
+			UART1_RTS = 1; // TXEN
+	
+			delay_ms(2);
+	
+			for(i=0; i<temp; i++)
+			{
+				while (U1STAbits.UTXBF);
+				U1TXREG = txbuf[i] & 0xFF;
+			}
+
+			mLED1 = 0; // frame led off
 		}
-		//LATAbits.LATA2 = 1;
-		//mLED2_Off()
+		delay_ms(5);
+
+		LATBbits.LATB8 = 0;
+		Nop();
+		Nop();
 	}
 }
 
-void txByte(unsigned char byte)
-{
-	while(BusyUART1());
-	WriteUART1(byte);
-
-}
-
-unsigned char rxByte()
-{
-	unsigned char byte;
-	byte = ReadUART1();
-	return byte;
-}
-
-unsigned char rdyByte()
-{
-	return(U1STAbits.URXDA);
-}
-
-
-void status_leds_off()
-{
-       mLED1_Off()
-       mLED2_Off()
-       mLED3_Off()
-}
-
-void status_leds_frame_on()
-{
-        mLED2_On()
-}
-
-void status_leds_frame_off()
-{
-        mLED2_Off()
-}

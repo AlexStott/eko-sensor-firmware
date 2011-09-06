@@ -1,18 +1,11 @@
-// Maximum modbus data length (in bytes). This is used to dimension the PDU arrays/structs
-#define MAX_DATA_LENGTH 64
+#define MAX_DATA_LENGTH 32
 
-// Error conditions
 #define MODBUS_NOT_ADDR				-1
 #define MODBUS_UNKNOWN_FUNC		-10
 
-// Function code 04 owns the address space from 0x4000 to 0x5FFF
 #define MB04_OFFSET						0x4000
 #define MB04_LENGTH						0x1FFF
 #define MB04_END							MB04_OFFSET + MB04_LENGTH
-
-#define MB06_OFFSET						0x5000
-#define MB06_LENGTH						0x1FFF
-#define MB06_END							MB06_OFFSET + MB06_LENGTH
 
 typedef struct 
 {
@@ -70,7 +63,9 @@ extern void status_leds_frame_on();
 extern unsigned int calculate_crc16(unsigned char *buffer, unsigned int length);
 extern void start_mb_timeout_timer();
 extern void close_mb_timeout_timer();
-
+extern void DebugLED1();
+extern void DebugLED2();
+extern void DebugLED3();
 
 int modbusRecvLoop(void);
 pduErrorType check_req_pdu(unsigned int pduLength);
