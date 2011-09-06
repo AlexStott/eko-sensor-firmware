@@ -29,7 +29,7 @@
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //This file contains the function prototypes for the i2c function
-#define PAGESIZE	32
+#define PAGESIZE	16
 
 //Low Level Functions
 unsigned int IdleI2C(void);
@@ -39,6 +39,7 @@ unsigned int StopI2C(void);
 unsigned int RestartI2C(void);
 unsigned int getsI2C(unsigned char*, unsigned char);
 unsigned int NotAckI2C(void);
+unsigned int CloseI2C(void);
 unsigned int InitI2C(void);
 unsigned int ACKStatus(void);
 unsigned int getI2C(void);

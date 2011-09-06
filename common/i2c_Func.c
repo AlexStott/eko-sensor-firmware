@@ -27,9 +27,13 @@
 ; 	Author:		  	    	Martin Bowman              
 ;	Company:			    Microchip Technology, Inc.
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#include "p33Fxxxx.h"
-#include "i2c.h"
+#include "board\chip.h"
+#include "include\i2c.h"
 
+unsigned int CloseI2C(void)
+{
+	I2C1CON = 0x0000;
+}
 
 /*********************************************************************
 * Function:        InitI2C()
@@ -50,7 +54,7 @@ unsigned int InitI2C(void)
 	//Consult the dSPIC Data Sheet for information on how to calculate the
 	//Baud Rate.
 
-	I2C1BRG = 0x004f; 
+	I2C1BRG = 0x0013; 
 
 	//Now we will initialise the I2C peripheral for Master Mode, No Slew Rate
 	//Control, and leave the peripheral switched off.
@@ -148,6 +152,7 @@ unsigned int WriteI2C(unsigned char byte)
 	//while (I2C1STATbits.TRSTAT);	//Wait for bus to be idle
 	I2C1TRN = byte;					//Load byte to I2C1 Transmit buffer
 	while (I2C1STATbits.TBF);		//wait for data transmission
+	return 0;
 
 }
 
@@ -567,7 +572,7 @@ unsigned int EEAckPolling(unsigned char control)
 			return(-1);		//error return
 		}
 
-		while(ACKStatus())
+		while(!ACKStatus())
 		{
 			RestartI2C();	//generate restart
 			if(I2C1STATbits.BCL)
