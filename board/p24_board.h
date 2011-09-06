@@ -29,4 +29,23 @@
 #define mLED2_Toggle()			mLED2 = !mLED2;
 #define mLED3_Toggle()			mLED3 = !mLED3;
 
+/* I2C EEPROM can configure device functionality */
+#ifdef EN_CFG_EEPROM
+	#define EE_ADDR_CFG	   0xA0 /* Base address for EEPROM */
+	
+	#define CFG_EE_MBADDR  0x00 /* Modbus Address */
+	#define CFG_EE_MBCLS   0x01 /* Modbus Device Class */
+	#define CFG_EE_ADC_SR  0x02 /* Modbus ADC Setting Register */
+	#define CFG_EE_ADC_R0  0x03 /* Modbus ADC Measurement 1 Register */
+	#define CFG_EE_ADC_R1  0x04 /* Modbus ADC Measurement 2 Register */
+	#define CFG_EE_ADC_R2  0x05 /* ... */
+	#define CFG_EE_ADC_R3  0x06 /* ... */
+	#define CFG_EE_ADC_R4  0x07 /* ... */
+	
+	#define CFG_EE_I2C_SR  0x08 /* Modbus I2C Device Setting Register */
+	#define CFG_EE_CRC_LO  0x09 /* Config Section CRC */
+	#define CFG_EE_CRC_HI  0x0A
+#endif
+
+
 #endif

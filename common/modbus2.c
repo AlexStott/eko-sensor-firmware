@@ -4,6 +4,9 @@
 
 extern void error_led_on( void );
 
+int adc_samples[5][32];
+
+
 char validate_pdu( unsigned char daddr, unsigned char msg_len, unsigned char* ptr )
 {
 	unsigned int crc16;
@@ -52,7 +55,7 @@ char process_pdu( unsigned char* src, unsigned char* dest )
 	switch (func_code)
 	{
 		case 0x03:
-			break;
+			
 		case 0x04:
 			break;
 		case 0x06:

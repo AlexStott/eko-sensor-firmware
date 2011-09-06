@@ -9,20 +9,30 @@
  * ********************************************************************* *
  */
 #define USE_AND_OR
+#define EN_CFG_EEPROM
 
-#define TARGET_EKOBB_R3
 #include "board/chip.h"
 #include "board/p24_fuses.h"
 #include "board/p24_board.h"
 #include "include/modbus2.h"
-
+#include "include/tmr2delay.h"
+#include "include/mb_crc16.h"
+#include "include/i2c.h"
 //p24 libs
 #include <uart.h>
 
 #define FCY		(4000000)
-#define DEV_ADDR 0x02
-unsigned char rxbuf[32];
-unsigned char txbuf[64];
+#define DEFAULT_ADDR 0x01
+
+
+#define RX_BUF_MAX	32
+#define TX_BUF_MAX	64
+
+unsigned char mb_addr;
+
+unsigned char rxbuf[RX_BUF_MAX];
+unsigned char txbuf[TX_BUF_MAX];
+unsigned char cfgbuf[11];
 
 unsigned char rx_len;
 
@@ -86,54 +96,39 @@ void error_led_on( void )
 	mLED2_On()
 }
 
-
-void delay_ms( unsigned char ms )
-{
-	unsigned int ticks;
-	ticks = (ms*1000/64);
-	T2CON = 0x0000;
-	TMR2 = 0;
-	T2CON = 0x8030;
-	while (TMR2 < ticks );
-}
-
-void delay_us( unsigned char us )
-{
-	unsigned int ticks;
-	ticks = (us/64);
-	T2CON = 0x0000;
-	TMR2 = 0;
-	T2CON = 0x8030;
-	while (TMR2 < (ticks) );
-}
-
-
-
 char get_msg( void )
 {
 	unsigned char idx = 0;
 	unsigned char thresh = 8;
 	unsigned char temp;
+	
+	// wait until data available bit is set
 	while ( !U1STAbits.URXDA  ) {}
 	
+	// Use TMR2 for timeout of around 10ms
 	TMR2 = 0;
 	T2CON = 0x8030; // 1:256 prescale, enable tmr2
 	
- 	while ( (idx < thresh) && (TMR2 < 150) )
+ 	while ( (idx < thresh) && (TMR2 < 150) && (idx < RX_BUF_MAX) )
 	{
+		// empty buffer while data available
 		while(U1STAbits.URXDA)
 		{
 			rxbuf[idx++] = (unsigned char)(0x00FF & U1RXREG);
 		}
+		// check for function code 16
 		if ((idx == 7) && (rxbuf[2] == 0x10))
 		{
-			// case for function 16
+			// set pdu length for extra bytes
 			thresh = 9 + rxbuf[6];
 		}
+		TMR2 = 0;
 	}
 	
+	// disable timer
 	T2CON = 0x0000;
 
+	// flush buffer of extra data
 	while( U1STAbits.URXDA )
 	{
 		temp = (unsigned char)(0x00FF & U1RXREG); // dump extra characters
@@ -142,22 +137,76 @@ char get_msg( void )
 	return idx;
 }
 
+void init_ports( void )
+{
+	// TRIS Settings for UART
+	//#ifdef TARGET_EKOBB_R3
+		TRISBbits.TRISB2 = 1; // In
+		TRISBbits.TRISB7 = 0; // Out
+		TRISBbits.TRISB8 = 0;
+	//#endif
+	
+	// TRIS Settings for I2C
+	//#ifdef TARGET_EKOBB_R3
+	//	TRISBbits.TRISB5 = 1;
+	//	TRISBbits.TRISB6 = 1;
+	//#endif
+
+	// Setup Analogue Ports:
+	//     Set TRIS bits to 1 (Input)
+	//	   Set AD1PCFG bits to 0 (ADC Input)
+	#ifdef TARGET_EKOdBB_R3
+		TRISAbits.TRISA0 = 1; // AN0
+		TRISAbits.TRISA1 = 1; // AN1
+		TRISBbits.TRISB0 = 1; // AN2
+		TRISBbits.TRISB1 = 1; // AN3
+		TRISBbits.TRISB3 = 1; // AN5
+		AD1PCFG = 0xFFC0; // AN0-AN3 and AN5 set as analogue
+	#endif
+}
+
+void load_cfg_from_eeprom( void )
+{
+	#ifdef EN_CFG_EEPROM
+	unsigned int cfg_crc;
+	InitI2C(); /* Initialise I2C at 100kHz @ 8Mhz FCY */
+	LDSequentialReadI2C(EE_ADDR_CFG, 0x00, cfgbuf, 11);
+	cfg_crc = calculate_crc16(cfgbuf, 9);
+	if (cfg_crc == ((((unsigned int)cfgbuf[10] << 8) & 0xFF00) + (unsigned int)cfgbuf[9]))
+	{
+		// Configure
+	}
+	else
+	{
+		error_led_on();
+	#endif
+		// Configure defaults
+	#ifdef EN_CFG_EEPROM
+	}
+	CloseI2C();
+	#endif
+}
+
 int main (void)
 {
 
 	unsigned char temp = 0;
 	unsigned char i;
-	AD1PCFG = 0xFFFF;
-	TRISBbits.TRISB2 = 1; // In
-	TRISBbits.TRISB7 = 0; // Out
-	TRISBbits.TRISB8 = 0;
-	LATBbits.LATB8 = 0;
 	
+	AD1PCFG = 0xFFFF; // All pins digital to begin
 
+	/* UART1_RTS aliases a digital output pin (PORTB5?),
+	   For the SP483E to transmit, set RTS pin high
+	   For receive set RTS low.
+       !!Tx FIFO is 4 bytes. After we write the last
+		4 bytes to the tx reg, keep RTS high for approx 10ms
+		for last few data bytes to transmit */  
+
+	UART1_RTS = 0; // Receiver Enabled
+	
+	init_ports();
 	mInitLED();
-	
-
-
+	load_cfg_from_eeprom();
 
 	while(1)
 	{	
@@ -166,10 +215,10 @@ int main (void)
 		init_uart1(25);
 		mLED1 = 0;
 		mLED2 = 0;
-  		
+  		//if (U1STAbits.URXDA)
 		rx_len = get_msg();
 		// message recvd. in rxbuf.
-		temp = validate_pdu(DEV_ADDR, rx_len, rxbuf);
+		temp = validate_pdu(DEFAULT_ADDR, rx_len, rxbuf);
 		
 		
 		if (temp == 1)
@@ -181,7 +230,7 @@ int main (void)
 		
 	
 			/* Transmit Response */
-			LATBbits.LATB8 = 1; // TXEN
+			UART1_RTS = 1; // TXEN
 	
 			delay_ms(2);
 	
