@@ -58,6 +58,7 @@ unsigned int  databuf[DATA_BUF_SIZE]; /*!< Analogue data buffer. */
  */
 unsigned char confbuf[DATA_BUF_SIZE]; /*!< Configuration / Status buffer. */
 
+unsigned char cfg_eeprom_dirty;
 
 void __attribute__((interrupt, auto_psv)) _DefaultInterrupt(void)
 {
@@ -201,10 +202,11 @@ void load_cfg_from_eeprom( void )
 {
 	#ifdef EN_CFG_EEPROM
 	unsigned int cfg_crc;
+	
 	InitI2C(); /* Initialise I2C at 100kHz @ 8Mhz FCY */
-	LDSequentialReadI2C(EE_ADDR_CFG, 0x00, confbuf, 11);
-	cfg_crc = calculate_crc16(confbuf, 9);
-	if (cfg_crc == ((((unsigned int)confbuf[10] << 8) & 0xFF00) + (unsigned int)confbuf[9]))
+	LDSequentialReadI2C(EE_ADDR_CFG, 0x00, confbuf, 16);
+	cfg_crc = calculate_crc16(confbuf, 14);
+	if (cfg_crc == ((((unsigned int)confbuf[15] << 8) & 0xFF00) + (unsigned int)confbuf[14]))
 	{
 		// Configure
 	}
@@ -217,6 +219,39 @@ void load_cfg_from_eeprom( void )
 	}
 	CloseI2C();
 	#endif
+	
+	cfg_eeprom_dirty = 0;
+}
+
+void save_cfg_to_eeprom( void )
+{
+	// if eeprom needs to be saved, save it.
+	unsigned int cfg_crc;
+	
+	#ifdef EN_CFG_EEPROM
+		cfg_crc = calculate_crc16(confbuf, 14);
+		confbuf[15] = (unsigned char)((cfg_crc >> 8) & 0x00FF);
+		confbuf[14] = (unsigned char)(cfg_crc & 0x00FF);
+		CloseI2C();
+		InitI2C();
+		LDPageWriteI2C(EE_ADDR_CFG, 0x00, confbuf);
+		// blink leds
+		mLED1 = 0;
+		mLED2 = 0;
+		for(cfg_crc = 0; cfg_crc < 50; cfg_crc++)
+		{
+		delay_ms(10);
+		mLED1 = !mLED1;
+		mLED2 = !mLED2;
+		}
+		mLED1 = 0;
+		mLED2 = 0;
+		CloseI2C();
+		
+		
+	#endif
+	
+	cfg_eeprom_dirty = 0;
 }
 
 int main (void)
@@ -283,6 +318,12 @@ int main (void)
 		delay_ms(15);
 
 		LATBbits.LATB8 = 0;
+		
+		
+		if ((cfg_eeprom_dirty == 1) && (confbuf[16] == 0xA0) && (confbuf[17] == 0xEE))
+		{
+			save_cfg_to_eeprom();
+		}
 		Nop();
 		Nop();
 	}

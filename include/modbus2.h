@@ -17,8 +17,11 @@ char validate_pdu( unsigned char daddr, unsigned char msg_len, unsigned char* pt
 
 char process_pdu( unsigned char* src, unsigned char* dest, unsigned int* databuf, unsigned char* confbuf );
 
-char process_pdu_fn3( unsigned int start_reg, unsigned int reg_count, unsigned int* databuf, unsigned char* src, unsigned char* dest );
+char process_pdu_fn4( unsigned int start_reg, unsigned int reg_count, unsigned int* databuf, unsigned char* src, unsigned char* dest );
 
-char process_pdu_fn4( unsigned int start_reg, unsigned int reg_count, unsigned char* confbuf, unsigned char* src, unsigned char* dest );
+char process_pdu_fn3( unsigned int start_reg, unsigned int reg_count, unsigned char* confbuf, unsigned char* src, unsigned char* dest );
+char process_pdu_fn6( unsigned int target_reg, unsigned int target_value, unsigned char* confbuf, unsigned char* src, unsigned char* dest );
+
+
 
 #endif
