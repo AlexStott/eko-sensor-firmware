@@ -58,7 +58,12 @@ unsigned int  databuf[DATA_BUF_SIZE]; /*!< Analogue data buffer. */
  */
 unsigned char confbuf[DATA_BUF_SIZE]; /*!< Configuration / Status buffer. */
 
+/**
+ * Configuration EEPROM dirty marker.
+ * Set to 1 if the EEPROM needs to be updated with data in the conf buffer
+ */
 unsigned char cfg_eeprom_dirty;
+
 
 void __attribute__((interrupt, auto_psv)) _DefaultInterrupt(void)
 {
@@ -172,18 +177,23 @@ char get_msg( void )
 
 void init_ports( void )
 {
-	// TRIS Settings for UART
-	//#ifdef TARGET_EKOBB_R3
+	//TRIS Settings for UART
+	#ifdef TARGET_EKOBB_R3
 		TRISBbits.TRISB2 = 1; // In
 		TRISBbits.TRISB7 = 0; // Out
 		TRISBbits.TRISB8 = 0;
-	//#endif
+	#endif
 	
 	// TRIS Settings for I2C
-	//#ifdef TARGET_EKOBB_R3
-	//	TRISBbits.TRISB5 = 1;
-	//	TRISBbits.TRISB6 = 1;
-	//#endif
+	#ifdef TARGET_EKOBB_R3
+		TRISBbits.TRISB5 = 1;
+		TRISBbits.TRISB6 = 1;
+	#endif
+	
+	// TRIS Settings for Interrupt
+	#ifdef TARGET_EKOBB_R3
+		TRISAbits.TRISA2 = 0;
+	#endif
 
 	// Setup Analogue Ports:
 	//     Set TRIS bits to 1 (Input)
@@ -194,7 +204,7 @@ void init_ports( void )
 		TRISBbits.TRISB0 = 1; // AN2
 		TRISBbits.TRISB1 = 1; // AN3
 		TRISBbits.TRISB3 = 1; // AN5
-		AD1PCFG = 0xFFC0; // AN0-AN3 and AN5 set as analogue
+		AD1PCFG = 0xFFE0; // AN0-AN3 and AN5 set as analogue
 	#endif
 }
 
@@ -238,9 +248,9 @@ void save_cfg_to_eeprom( void )
 		// blink leds
 		mLED1 = 0;
 		mLED2 = 0;
-		for(cfg_crc = 0; cfg_crc < 50; cfg_crc++)
+		for(cfg_crc = 0; cfg_crc < 20; cfg_crc++)
 		{
-		delay_ms(10);
+		delay_ms(100);
 		mLED1 = !mLED1;
 		mLED2 = !mLED2;
 		}
@@ -270,7 +280,9 @@ int main (void)
 		for last few data bytes to transmit */  
 
 	UART1_RTS = 0; // Receiver Enabled
-	
+	#ifdef TARGET_EKOBB_R3
+	BUS_INTERRUPT = 1; // set interrupt line to O/D
+	#endif
 	init_ports();
 	mInitLED();
 	load_cfg_from_eeprom();
@@ -317,7 +329,7 @@ int main (void)
 		}
 		delay_ms(15);
 
-		LATBbits.LATB8 = 0;
+		UART1_RTS = 0;
 		
 		
 		if ((cfg_eeprom_dirty == 1) && (confbuf[16] == 0xA0) && (confbuf[17] == 0xEE))

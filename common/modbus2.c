@@ -32,6 +32,7 @@ char response_exception( unsigned char* src, unsigned char* dest, unsigned char 
 {
 	unsigned int crc16_result;
 	unsigned char idx = 1;
+	error_led_on();
 	dest[idx] = dest[idx] | 0x80;
 	dest[++idx] = errcode;
 	crc16_result = calculate_crc16(dest, 3);
@@ -60,7 +61,6 @@ char process_pdu( unsigned char* src, unsigned char* dest, unsigned int* databuf
 	if (!MB_SUPPORTED_FUNC(func_code))
 	{
 		// illegal function
-		error_led_on();
 		return response_exception(src, dest, ILLEGAL_FUNCTION);
 	}
 	
@@ -85,7 +85,6 @@ char process_pdu( unsigned char* src, unsigned char* dest, unsigned int* databuf
 			return process_pdu_fn6(start_reg, reg_count, confbuf, src, dest);
 			break;
 		default:
-			error_led_on();
 			return response_exception(src, dest, SLAVE_DEVICE_FAILURE);
 			break;
 	}

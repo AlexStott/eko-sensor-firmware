@@ -7,4 +7,5 @@
 #define mInitLED()				TRISBbits.TRISB4 = 0; TRISAbits.TRISA4 = 0;
 
 #define UART1_RTS				LATBbits.LATB8
+#define BUS_INTERRUPT			LATAbits.LATA2
 #endif
