@@ -47,8 +47,6 @@ file_019=.
 file_020=.
 file_021=.
 file_022=.
-file_023=.
-file_024=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -73,8 +71,6 @@ file_019=no
 file_020=no
 file_021=no
 file_022=no
-file_023=no
-file_024=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -99,8 +95,6 @@ file_019=no
 file_020=no
 file_021=no
 file_022=no
-file_023=no
-file_024=no
 [FILE_INFO]
 file_000=common\mb_crc16.c
 file_001=common\modbus2.c
@@ -119,14 +113,12 @@ file_013=board\p24f16ka102_fuses.h
 file_014=board\p24fj256gb106_fuses.h
 file_015=board\SensorProfiles.h
 file_016=include\eko_i2c_sensors.h
-file_017=include\i2c_engscope.h
-file_018=include\main.h
-file_019=include\mb_crc16.h
-file_020=include\modbus2.h
-file_021=include\tmr2delay.h
-file_022=include\i2c.h
-file_023=include\p24_adc.h
-file_024=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
+file_017=include\mb_crc16.h
+file_018=include\modbus2.h
+file_019=include\tmr2delay.h
+file_020=include\i2c.h
+file_021=include\p24_adc.h
+file_022=C:\Program Files\Microchip\mplabc30\v3.25\support\PIC24F\gld\p24F16KA102.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=

@@ -19,6 +19,7 @@
 #include "include/tmr2delay.h"
 #include "include/mb_crc16.h"
 #include "include/i2c.h"
+#include "include/p24_adc.h"
 
 /**
  * Cycle Clock Frequency.
@@ -35,7 +36,7 @@
 #define RX_BUF_MAX		25 /*!< Receive Buffer Size. limited to 16 bytes data + 9 bytes mb stuff. */
 #define TX_BUF_MAX		70 /*!< Transmit Buffer Size. limited to 32 words data + 5 bytes mb stuff. */
 #define DATA_BUF_SIZE	256 /*!< Data Buffer Size. eg: capable of 16 samples per input accross 4 inputs. */
-#define CONF_BUF_SIZE	160
+#define CONF_BUF_SIZE	64
 /**
  * Modbus device address.
  * Modbus device adddress as loaded from EEPROM.
@@ -218,13 +219,26 @@ void load_cfg_from_eeprom( void )
 	cfg_crc = calculate_crc16(confbuf, 14);
 	if (cfg_crc == ((((unsigned int)confbuf[15] << 8) & 0xFF00) + (unsigned int)confbuf[14]))
 	{
-		// Configure
+		// save address incase someone erases it
+		mb_addr = confbuf[CFG_EE_MBADDR];
+		// set control registers to 0
+		confbuf[CFG_ADC_CONTROL] = 0;
+		confbuf[CFG_I2C_CONTROL] = 0;
 	}
 	else
 	{
 		error_led_on();
 	#endif
 		// Configure defaults
+		mb_addr = DEFAULT_ADDR;
+		confbuf[CFG_EE_MBCLS] = 0x00;
+		confbuf[CFG_EE_ADC_ISEL] = 0x2F;  // enable all AN pins
+		confbuf[CFG_EE_ADC_REPT] = 32; // 32 samples
+		confbuf[CFG_EE_ADC_WAIT] = 10; // 10us wait
+		confbuf[CFG_EE_ADC_SAMP] = 2;  // 2ms wait between samples
+		confbuf[CFG_EE_I2C_CHIP] = 0;  // no i2c devices registered
+		confbuf[CFG_ADC_CONTROL] = 0;
+		confbuf[CFG_I2C_CONTROL] = 0;
 	#ifdef EN_CFG_EEPROM
 	}
 	CloseI2C();
@@ -261,6 +275,7 @@ void save_cfg_to_eeprom( void )
 		
 	#endif
 	
+	load_cfg_from_eeprom();
 	cfg_eeprom_dirty = 0;
 }
 
@@ -285,25 +300,24 @@ int main (void)
 	#endif
 	init_ports();
 	mInitLED();
+	mLED1 = 0;
+		mLED2 = 0;
 	load_cfg_from_eeprom();
 
-	for (i = 0; i < 20; i++)
-	{	
-		confbuf[i] = i;
-		databuf[i] = (unsigned int)(i*100);
-	}
+
 
 	while(1)
 	{	
 		// init uart and interrupts
 		rx_len = 0;
 		init_uart1(25);
-		mLED1 = 0;
-		mLED2 = 0;
+	
   		//if (U1STAbits.URXDA)
 		rx_len = get_msg();
+	mLED1 = 0;
+		mLED2 = 0;
 		// message recvd. in rxbuf.
-		temp = validate_pdu(DEFAULT_ADDR, rx_len, rxbuf);
+		temp = validate_pdu(mb_addr, rx_len, rxbuf);
 		
 		
 		if (temp == 1)
@@ -331,6 +345,12 @@ int main (void)
 
 		UART1_RTS = 0;
 		
+		if (confbuf[CFG_ADC_CONTROL] == 0x80)
+		{
+			ProcessADCEvents( confbuf[CFG_EE_ADC_ISEL], (unsigned int)confbuf[CFG_EE_ADC_WAIT],
+						confbuf[CFG_EE_ADC_REPT], (unsigned int)confbuf[CFG_EE_ADC_WAIT], databuf);
+			confbuf[CFG_ADC_CONTROL] = 0x00;
+		}
 		
 		if ((cfg_eeprom_dirty == 1) && (confbuf[16] == 0xA0) && (confbuf[17] == 0xEE))
 		{

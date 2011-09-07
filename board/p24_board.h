@@ -33,19 +33,28 @@
 #ifdef EN_CFG_EEPROM
 	#define EE_ADDR_CFG	   0xA0 /* Base address for EEPROM */
 	
-	#define CFG_EE_MBADDR  0x00 /* Modbus Address */
-	#define CFG_EE_MBCLS   0x01 /* Modbus Device Class */
-	#define CFG_EE_ADC_SR  0x02 /* Modbus ADC Setting Register */
-	#define CFG_EE_ADC_R0  0x03 /* Modbus ADC Measurement 1 Register */
-	#define CFG_EE_ADC_R1  0x04 /* Modbus ADC Measurement 2 Register */
-	#define CFG_EE_ADC_R2  0x05 /* ... */
-	#define CFG_EE_ADC_R3  0x06 /* ... */
-	#define CFG_EE_ADC_R4  0x07 /* ... */
+	#define CFG_EE_MBADDR  		0x00 /* Modbus Address */
+	#define CFG_EE_MBCLS   		0x01 /* Modbus Device Class */
+	#define CFG_EE_ADC_ISEL  	0x02 /* ADC Input Select (Hi Byte) */
+	#define CFG_EE_ADC_REPT  	0x03 /* ADC Repeat Count */
+	#define CFG_EE_ADC_SAMP  	0x04 /* ADC Sample Interval (time between sampl sequences*/
+	#define CFG_EE_ADC_WAIT  	0x05 /* ADC Wait between two measurements */
 	
-	#define CFG_EE_I2C_SR  0x08 /* Modbus I2C Device Setting Register */
-	#define CFG_EE_CRC_LO  0x09 /* Config Section CRC */
-	#define CFG_EE_CRC_HI  0x0A
+	#define CFG_EE_I2C_CHIP  	0x06 /* I2C Device Enable Register */
+	
+	/* Unused EEPROM Data */
+
+	#define CFG_EE_CRC_LO  0x0E /* Config Section CRC */
+	#define CFG_EE_CRC_HI  0x0F
 #endif
-
-
+	
+	/* Runtime configuration memory */
+	#define CFG_ADC_CONTROL		0x10
+	#define CFG_I2C_CONTROL		0x11
+	
+	#define	DAT_I2C_TEMP_LO		0x20
+	#define DAT_I2C_TEMP_HI		0x21
+	
+	#define DAT_I2C_LIGHT_LO	0x22
+	#define DAT_I2C_LIGHT_HI	0x23
 #endif
