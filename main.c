@@ -56,7 +56,7 @@ unsigned int  databuf[DATA_BUF_SIZE]; /*!< Analogue data buffer. */
 /**
  * Configuration data buffer.
  */
-unsigned char cfgbuf[11];
+unsigned char confbuf[DATA_BUF_SIZE]; /*!< Configuration / Status buffer. */
 
 
 void __attribute__((interrupt, auto_psv)) _DefaultInterrupt(void)
@@ -202,9 +202,9 @@ void load_cfg_from_eeprom( void )
 	#ifdef EN_CFG_EEPROM
 	unsigned int cfg_crc;
 	InitI2C(); /* Initialise I2C at 100kHz @ 8Mhz FCY */
-	LDSequentialReadI2C(EE_ADDR_CFG, 0x00, cfgbuf, 11);
-	cfg_crc = calculate_crc16(cfgbuf, 9);
-	if (cfg_crc == ((((unsigned int)cfgbuf[10] << 8) & 0xFF00) + (unsigned int)cfgbuf[9]))
+	LDSequentialReadI2C(EE_ADDR_CFG, 0x00, confbuf, 11);
+	cfg_crc = calculate_crc16(confbuf, 9);
+	if (cfg_crc == ((((unsigned int)confbuf[10] << 8) & 0xFF00) + (unsigned int)confbuf[9]))
 	{
 		// Configure
 	}
@@ -240,6 +240,12 @@ int main (void)
 	mInitLED();
 	load_cfg_from_eeprom();
 
+	for (i = 0; i < 20; i++)
+	{	
+		confbuf[i] = i;
+		databuf[i] = (unsigned int)(i*100);
+	}
+
 	while(1)
 	{	
 		// init uart and interrupts
@@ -258,7 +264,7 @@ int main (void)
 			mLED2 = 0; // reset error led
 			// message is known good!
 			mLED1 = 1; // frame led on
-			temp = process_pdu(rxbuf, txbuf, databuf);
+			temp = process_pdu(rxbuf, txbuf, databuf, confbuf);
 		
 	
 			/* Transmit Response */
@@ -269,12 +275,12 @@ int main (void)
 			for(i=0; i<temp; i++)
 			{
 				while (U1STAbits.UTXBF);
-				U1TXREG = txbuf[i] & 0xFF;
+				U1TXREG = (unsigned int)(txbuf[i]) & 0x00FF;
 			}
 
 			mLED1 = 0; // frame led off
 		}
-		delay_ms(5);
+		delay_ms(15);
 
 		LATBbits.LATB8 = 0;
 		Nop();
