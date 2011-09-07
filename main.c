@@ -34,8 +34,8 @@
 /* Buffer sizes */
 #define RX_BUF_MAX		25 /*!< Receive Buffer Size. limited to 16 bytes data + 9 bytes mb stuff. */
 #define TX_BUF_MAX		70 /*!< Transmit Buffer Size. limited to 32 words data + 5 bytes mb stuff. */
-#define DATA_BUF_SIZE	64 /*!< Data Buffer Size. eg: capable of 16 samples per input accross 4 inputs. */
-
+#define DATA_BUF_SIZE	256 /*!< Data Buffer Size. eg: capable of 16 samples per input accross 4 inputs. */
+#define CONF_BUF_SIZE	160
 /**
  * Modbus device address.
  * Modbus device adddress as loaded from EEPROM.
@@ -56,7 +56,7 @@ unsigned int  databuf[DATA_BUF_SIZE]; /*!< Analogue data buffer. */
 /**
  * Configuration data buffer.
  */
-unsigned char confbuf[DATA_BUF_SIZE]; /*!< Configuration / Status buffer. */
+unsigned char confbuf[CONF_BUF_SIZE]; /*!< Configuration / Status buffer. */
 
 /**
  * Configuration EEPROM dirty marker.
