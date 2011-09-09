@@ -148,12 +148,13 @@ char get_msg( void )
 	TMR2 = 0;
 	T2CON = 0x8030; // 1:256 prescale, enable tmr2
 	
- 	while ( (idx < thresh) && (TMR2 < 150) && (idx < RX_BUF_MAX) )
+ 	while ( (idx < thresh) && (TMR2 < 20) && (idx < RX_BUF_MAX) )
 	{
 		// empty buffer while data available
 		while(U1STAbits.URXDA)
 		{
 			rxbuf[idx++] = (unsigned char)(0x00FF & U1RXREG);
+			TMR2 = 0;
 		}
 		// check for function code 16
 		if ((idx == 7) && (rxbuf[2] == 0x10))
@@ -161,7 +162,7 @@ char get_msg( void )
 			// set pdu length for extra bytes
 			thresh = 9 + rxbuf[6];
 		}
-		TMR2 = 0;
+		
 	}
 	
 	// disable timer
@@ -172,7 +173,7 @@ char get_msg( void )
 	{
 		temp = (unsigned char)(0x00FF & U1RXREG); // dump extra characters
 	}
-
+	U1STA = 0x0400;
 	return idx;
 }
 
