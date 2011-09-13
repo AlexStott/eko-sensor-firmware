@@ -4,7 +4,7 @@
 
 
 #define MB_DATABUF_REGION_START 	0x3000
-#define MB_DATABUF_REGION_LENGTH	160
+#define MB_DATABUF_REGION_LENGTH	256
 #define MB_MAX_READ_REG_COUNT		32
 
 #define MB_CONFBUF_REGION_START 	0x8000
@@ -176,7 +176,7 @@ char process_pdu_fn6( unsigned int target_reg, unsigned int target_value, unsign
 	dest[6] = src[6];
 	dest[7] = src[7];
 	
-	if ((target_idx >= 8) || ((confbuf[16] == 0xE0) && (confbuf[17] == 0x10)))
+	if (((target_idx >= 8) || ((confbuf[16] == 0xE0) && (confbuf[17] == 0x10))) && (target_idx < 0x13 ))
 	{
 		// we overwrite the entire register, not just one byte!
 		confbuf[2*target_idx] = (unsigned char)((target_value & 0xFF00) >> 8);

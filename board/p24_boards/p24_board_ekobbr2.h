@@ -6,4 +6,11 @@
 #define mLED3					LATBbits.LATB14 // Not populated
 #define mInitLED()				TRISAbits.TRISA2 = 0; TRISAbits.TRISA3 = 0;
 
+#define UART1_RTS				LATBbits.LATB8
+#define BUS_INTERRUPT			LATAbits.LATA2
+
+#define RTSON					0
+#define RTSOFF					1
+
+#define RESET_EEPROM			PORTBbits.RB15
 #endif

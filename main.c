@@ -180,33 +180,39 @@ char get_msg( void )
 void init_ports( void )
 {
 	//TRIS Settings for UART
-	#ifdef TARGET_EKOBB_R3
+	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
 		TRISBbits.TRISB2 = 1; // In
 		TRISBbits.TRISB7 = 0; // Out
 		TRISBbits.TRISB8 = 0;
 	#endif
 	
 	// TRIS Settings for I2C
-	#ifdef TARGET_EKOBB_R3
+	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
 		TRISBbits.TRISB5 = 1;
 		TRISBbits.TRISB6 = 1;
 	#endif
 	
 	// TRIS Settings for Interrupt
-	#ifdef TARGET_EKOBB_R3
+	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
 		TRISAbits.TRISA2 = 0;
 	#endif
 
 	// Setup Analogue Ports:
 	//     Set TRIS bits to 1 (Input)
 	//	   Set AD1PCFG bits to 0 (ADC Input)
-	#ifdef TARGET_EKOdBB_R3
+	#if (defined(TARGET_EKOBB_R3))
 		TRISAbits.TRISA0 = 1; // AN0
 		TRISAbits.TRISA1 = 1; // AN1
 		TRISBbits.TRISB0 = 1; // AN2
 		TRISBbits.TRISB1 = 1; // AN3
 		TRISBbits.TRISB3 = 1; // AN5
-		AD1PCFG = 0xFFE0; // AN0-AN3 and AN5 set as analogue
+		AD1PCFG = 0xFFD0; // AN0-AN3 and AN5 set as analogue
+	#endif
+
+	// Enable weak internal pull up on CN11	
+	#if (defined(TARGET_EKOBB_R3))
+		TRISBbits.TRISB15 = 1;
+		CNPU1bits.CN11PUE = 1; // enable pullup
 	#endif
 }
 
@@ -280,6 +286,32 @@ void save_cfg_to_eeprom( void )
 	cfg_eeprom_dirty = 0;
 }
 
+void reset_configuration( void )
+{
+	int i = 0;
+	int cfg_crc;
+	for(i=0; i<16; i++)
+	{
+		confbuf[i] = 0;
+	}
+	CloseI2C();
+	InitI2C();
+	LDPageWriteI2C(EE_ADDR_CFG, 0x00, confbuf);
+
+	mLED1 = 0;
+	mLED2 = 0;
+	for(cfg_crc = 0; cfg_crc < 20; cfg_crc++)
+	{
+	delay_ms(75);
+	mLED1 = !mLED1;
+	}
+
+	CloseI2C();
+	cfg_eeprom_dirty = 0;
+
+//	load_cfg_from_eeprom();
+}
+
 int main (void)
 {
 
@@ -303,6 +335,12 @@ int main (void)
 	mInitLED();
 	mLED1 = 0;
 		mLED2 = 0;
+
+	if (RESET_EEPROM == 0)
+	{
+		reset_configuration();
+	}
+
 	load_cfg_from_eeprom();
 
 
@@ -313,22 +351,31 @@ int main (void)
 		rx_len = 0;
 		init_uart1(25);
 	
-  		//if (U1STAbits.URXDA)
+  		// failsafe, check address validity and reset
+		if (mb_addr == 0)
+		{
+			mLED2 = 1;
+			mb_addr = 0x01;
+		}
+
+		// block until pdu received
 		rx_len = get_msg();
-	mLED1 = 0;
-		mLED2 = 0;
+
+		// reset LEDs
+		mLED1 = 0;
+
 		// message recvd. in rxbuf.
 		temp = validate_pdu(mb_addr, rx_len, rxbuf);
-		
-		
+				
 		if (temp == 1)
 		{
 			mLED2 = 0; // reset error led
+		
 			// message is known good!
+			
 			mLED1 = 1; // frame led on
 			temp = process_pdu(rxbuf, txbuf, databuf, confbuf);
 		
-	
 			/* Transmit Response */
 			UART1_RTS = 1; // TXEN
 	
@@ -342,7 +389,7 @@ int main (void)
 
 			mLED1 = 0; // frame led off
 		}
-		delay_ms(15);
+		delay_ms(15); // wait for txbuffer to empty. 4*11 bits @ 9600bps.
 
 		UART1_RTS = 0;
 		
@@ -355,8 +402,14 @@ int main (void)
 		
 		if ((cfg_eeprom_dirty == 1) && (confbuf[16] == 0xA0) && (confbuf[17] == 0xEE))
 		{
+			// write to eeprom only if 0x8008 is set to AOEE
 			save_cfg_to_eeprom();
+			// reset register contents
+			confbuf[16] = 0x00;
+			confbuf[17] = 0x00;
 		}
+
+	
 		Nop();
 		Nop();
 	}
