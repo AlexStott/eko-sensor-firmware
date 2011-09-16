@@ -46,22 +46,23 @@
 
 	#define CFG_EE_CRC_LO  0x0E /* Config Section CRC */
 	#define CFG_EE_CRC_HI  0x0F
-	#define CFG_EE_LOCK    0x10
+	#define CFG_EE_LOCK_HI 0x10
+	#define CFG_EE_LOCK_LO 0x11
 #endif
 	/* Runtime configuration memory */
-	#define CFG_ADC_CONTROL		0x11
-	#define CFG_I2C_CONTROL		0x12
+	#define CFG_ADC_CONTROL		0x12
+	#define CFG_I2C_CONTROL		0x13
 	
-	#define	DAT_I2C_TEMP_LO		0x13
-	#define DAT_I2C_TEMP_HI		0x14
+	#define	DAT_I2C_TEMP_HI		0x14
+	#define DAT_I2C_TEMP_LO		0x15
 	
-	#define DAT_I2C_LIGHT_LO	0x15
 	#define DAT_I2C_LIGHT_HI	0x16
+	#define DAT_I2C_LIGHT_LO	0x17
 
-	#define SYS_MB_MSG_COUNT	0x17
-	#define SYS_MB_ERR_COUNT	0x18
-	#define SYS_FW_VERSION		0x19
-	#define SYS_HW_VERSION		0x1A
+	#define SYS_MB_MSG_COUNT	0x1B
+	#define SYS_MB_ERR_COUNT	0x1C
+	#define SYS_FW_VERSION		0x1D
+	#define SYS_HW_VERSION		0x1E
 	
 	
 #endif

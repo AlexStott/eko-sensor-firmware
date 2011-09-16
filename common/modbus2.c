@@ -1,7 +1,7 @@
 // Modbus New
 #include "include/mb_crc16.h"
 #include "include/modbus2.h"
-
+#include "board/p24_board.h"
 
 #define MB_DATABUF_REGION_START 	0x3000
 #define MB_DATABUF_REGION_LENGTH	256
@@ -128,9 +128,9 @@ char process_pdu_fn4( unsigned int start_reg, unsigned int reg_count, unsigned i
 
 char process_pdu_fn3( unsigned int start_reg, unsigned int reg_count, unsigned char* confbuf, unsigned char* src, unsigned char* dest )
 {
-	unsigned int start_idx;
-	unsigned int crc16_result;
-	int i;
+	unsigned int start_idx = 0;
+	unsigned int crc16_result = 0;
+	int i=0;
 	// check bounds
 	if ((start_reg < MB_CONFBUF_REGION_START) 
 		|| ((start_reg + reg_count - 1) > (MB_CONFBUF_REGION_START + MB_CONFBUF_REGION_LENGTH - 1))
@@ -176,7 +176,7 @@ char process_pdu_fn6( unsigned int target_reg, unsigned int target_value, unsign
 	dest[6] = src[6];
 	dest[7] = src[7];
 	
-	if (((target_idx >= 8) || ((confbuf[16] == 0xE0) && (confbuf[17] == 0x10))) && (target_idx < 0x13 ))
+	if (((target_idx >= 8) || ((confbuf[CFG_EE_LOCK_HI] == 0xE0) && (confbuf[CFG_EE_LOCK_LO] == 0x10))) && (target_idx < (DAT_I2C_TEMP_HI >> 1) ))
 	{
 		// we overwrite the entire register, not just one byte!
 		confbuf[2*target_idx] = (unsigned char)((target_value & 0xFF00) >> 8);

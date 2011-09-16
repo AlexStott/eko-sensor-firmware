@@ -10,7 +10,6 @@
  */
 
 #define USE_AND_OR
-#define EN_CFG_EEPROM
 
 #include "board/chip.h"
 #include "board/p24_fuses.h"
@@ -400,13 +399,13 @@ int main (void)
 			confbuf[CFG_ADC_CONTROL] = 0x00;
 		}
 		
-		if ((cfg_eeprom_dirty == 1) && (confbuf[16] == 0xA0) && (confbuf[17] == 0xEE))
+		if ((cfg_eeprom_dirty == 1) && (confbuf[CFG_EE_LOCK_HI] == 0xA0) && (confbuf[CFG_EE_LOCK_LO] == 0xEE))
 		{
 			// write to eeprom only if 0x8008 is set to AOEE
 			save_cfg_to_eeprom();
 			// reset register contents
-			confbuf[16] = 0x00;
-			confbuf[17] = 0x00;
+			confbuf[CFG_EE_LOCK_LO] = 0x00;
+			confbuf[CFG_EE_LOCK_HI] = 0x00;
 		}
 
 	
