@@ -50,19 +50,19 @@
 	#define CFG_EE_LOCK_LO 0x11
 #endif
 	/* Runtime configuration memory */
-	#define CFG_ADC_CONTROL		0x12
+	#define CFG_ADC_CONTROL		0x12 // 0x8009
 	#define CFG_I2C_CONTROL		0x13
 	
-	#define	DAT_I2C_TEMP_HI		0x14
+	#define	DAT_I2C_TEMP_HI		0x14 // 0x800A
 	#define DAT_I2C_TEMP_LO		0x15
 	
-	#define DAT_I2C_LIGHT_HI	0x16
+	#define DAT_I2C_LIGHT_HI	0x16 // 0x800B
 	#define DAT_I2C_LIGHT_LO	0x17
 
-	#define SYS_MB_MSG_COUNT	0x1B
-	#define SYS_MB_ERR_COUNT	0x1C
-	#define SYS_FW_VERSION		0x1D
-	#define SYS_HW_VERSION		0x1E
+	#define SYS_MB_MSG_COUNT	0x19 // 0x800C
+	#define SYS_MB_ERR_COUNT	0x1B // 0x800D
+	#define SYS_FW_VERSION		0x1C // 0x800E
+	#define SYS_HW_VERSION		0x1D
 	
 	
 #endif

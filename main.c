@@ -19,6 +19,7 @@
 #include "include/mb_crc16.h"
 #include "include/i2c.h"
 #include "include/p24_adc.h"
+#include "include/eko_i2c_sensors.h"
 
 /**
  * Cycle Clock Frequency.
@@ -314,7 +315,7 @@ void reset_configuration( void )
 int main (void)
 {
 
-	unsigned char temp = 0;
+	unsigned int temp = 0;
 	unsigned int i;
 	
 	AD1PCFG = 0xFFFF; // All pins digital to begin
@@ -352,6 +353,22 @@ int main (void)
 
 	load_cfg_from_eeprom();
 
+	// if present, init the mcp9800
+	if ((confbuf[CFG_EE_I2C_CHIP] & 0x80) != 0)
+	{
+		CloseI2C();
+		InitI2C();
+		mcp9800_init();
+		CloseI2C();
+	}
+
+	if ((confbuf[CFG_EE_I2C_CHIP] & 0x40) != 0)
+	{
+		CloseI2C();
+		InitI2C();
+		tsl2561_init();
+		CloseI2C();
+	}
 
 
 	while(1)
@@ -375,7 +392,8 @@ int main (void)
 			mLED2 = 1;
 			mb_addr = 0x01;
 		}
-
+		
+	
 		// block until pdu received
 		rx_len = get_msg();
 
@@ -384,7 +402,10 @@ int main (void)
 
 		// message recvd. in rxbuf.
 		temp = validate_pdu(mb_addr, rx_len);
-				
+
+
+
+	
 		if (temp == 1)
 		{
 			mLED2 = 0; // reset error led
@@ -418,6 +439,38 @@ int main (void)
 			confbuf[CFG_ADC_CONTROL] = 0x00;
 		}
 		
+		if ((((confbuf[CFG_I2C_CONTROL] & 0x80) != 0) ||
+			 ((confbuf[CFG_I2C_CONTROL] & 0x20) != 0)) && 
+			  ((confbuf[CFG_EE_I2C_CHIP] & 0x80) != 0))
+		{
+			mLED1 = 1;
+			CloseI2C();
+			InitI2C();
+			temp = mcp9800_get_temp();
+			confbuf[DAT_I2C_TEMP_HI] = (unsigned char)(temp >> 8);
+			confbuf[DAT_I2C_TEMP_LO] = (unsigned char)(temp & 0x00FF);
+			CloseI2C();
+			mLED1 = 0;
+			confbuf[CFG_I2C_CONTROL] &= 0x7F;
+		}
+		
+		// Enable only if bit 7 is set [I2C Light Single]
+		// or if bit 5 is set [I2C Light continuous]
+		if ((((confbuf[CFG_I2C_CONTROL] & 0x40) != 0) ||
+			 ((confbuf[CFG_I2C_CONTROL] & 0x10) != 0)) && 
+             ((confbuf[CFG_EE_I2C_CHIP] & 0x40) != 0))
+		{
+			mLED1 = 1;
+			CloseI2C();
+			InitI2C();
+			temp = tsl2561_get_lux();
+			confbuf[DAT_I2C_LIGHT_HI] = (unsigned char)(temp >> 8);
+			confbuf[DAT_I2C_LIGHT_LO] = (unsigned char)(temp & 0x00FF);
+			CloseI2C();
+			mLED1 = 0;
+			confbuf[CFG_I2C_CONTROL] &= 0xBF;
+		}	
+
 		if ((cfg_eeprom_dirty == 1) && (confbuf[CFG_EE_LOCK_HI] == 0xA0) && (confbuf[CFG_EE_LOCK_LO] == 0xEE))
 		{
 			// write to eeprom only if 0x8008 is set to AOEE
