@@ -192,7 +192,7 @@ void init_ports( void )
 	#endif
 	
 	// TRIS Settings for Interrupt
-	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
+	#if defined(TARGET_EKOBB_R3)
 		TRISAbits.TRISA2 = 0;
 	#endif
 
@@ -209,7 +209,7 @@ void init_ports( void )
 	#endif
 
 	// Enable weak internal pull up on CN11	
-	#if (defined(TARGET_EKOBB_R3))
+	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
 		TRISBbits.TRISB15 = 1;
 		CNPU1bits.CN11PUE = 1; // enable pullup
 	#endif
@@ -260,8 +260,8 @@ void save_cfg_to_eeprom( void )
 	
 	#ifdef EN_CFG_EEPROM
 		cfg_crc = calculate_crc16(confbuf, 14);
-		confbuf[15] = (unsigned char)((cfg_crc >> 8) & 0x00FF);
-		confbuf[14] = (unsigned char)(cfg_crc & 0x00FF);
+		confbuf[CFG_EE_CRC_HI] = (unsigned char)((cfg_crc >> 8) & 0x00FF);
+		confbuf[CFG_EE_CRC_LO] = (unsigned char)(cfg_crc & 0x00FF);
 		CloseI2C();
 		InitI2C();
 		LDPageWriteI2C(EE_ADDR_CFG, 0x00, confbuf);
@@ -315,7 +315,7 @@ int main (void)
 {
 
 	unsigned char temp = 0;
-	unsigned char i;
+	unsigned int i;
 	
 	AD1PCFG = 0xFFFF; // All pins digital to begin
 
@@ -326,15 +326,25 @@ int main (void)
 		4 bytes to the tx reg, keep RTS high for approx 10ms
 		for last few data bytes to transmit */  
 
-	UART1_RTS = 0; // Receiver Enabled
+	UART1_RTS = BUSRX; // Receiver Enabled
 	#ifdef TARGET_EKOBB_R3
 	BUS_INTERRUPT = 1; // set interrupt line to O/D
 	#endif
 	init_ports();
 	mInitLED();
 	mLED1 = 0;
-		mLED2 = 0;
-
+	mLED2 = 0;
+	
+	// clear buffers
+	for (i = 0; i <= 255; i++)
+		{
+			databuf[i] = 0;
+		}
+	for (i = 0; i < 64; i++)
+		{
+			confbuf[i] = 0;
+		}
+	
 	if (RESET_EEPROM == 0)
 	{
 		reset_configuration();
@@ -350,6 +360,15 @@ int main (void)
 		rx_len = 0;
 		init_uart1(25);
 	
+		confbuf[SYS_FW_VERSION] = 0x03;
+		#ifdef TARG_EKOBB_R2
+			confbuf[SYS_HW_VERSION = 0x02;
+		#endif
+
+		#ifdef TARG_EKOBB_R3
+			confbuf[SYS_HW_VERSION = 0x03;
+		#endif
+
   		// failsafe, check address validity and reset
 		if (mb_addr == 0)
 		{
@@ -364,7 +383,7 @@ int main (void)
 		mLED1 = 0;
 
 		// message recvd. in rxbuf.
-		temp = validate_pdu(mb_addr, rx_len, rxbuf);
+		temp = validate_pdu(mb_addr, rx_len);
 				
 		if (temp == 1)
 		{
@@ -373,10 +392,10 @@ int main (void)
 			// message is known good!
 			
 			mLED1 = 1; // frame led on
-			temp = process_pdu(rxbuf, txbuf, databuf, confbuf);
+			temp = process_pdu();
 		
 			/* Transmit Response */
-			UART1_RTS = 1; // TXEN
+			UART1_RTS = BUSTX; // TXEN
 	
 			delay_ms(2);
 	
@@ -390,12 +409,12 @@ int main (void)
 		}
 		delay_ms(15); // wait for txbuffer to empty. 4*11 bits @ 9600bps.
 
-		UART1_RTS = 0;
+		UART1_RTS = BUSRX;
 		
 		if (confbuf[CFG_ADC_CONTROL] == 0x80)
 		{
 			ProcessADCEvents( confbuf[CFG_EE_ADC_ISEL], (unsigned int)confbuf[CFG_EE_ADC_WAIT],
-						confbuf[CFG_EE_ADC_REPT], (unsigned int)confbuf[CFG_EE_ADC_WAIT], databuf);
+						confbuf[CFG_EE_ADC_REPT], (unsigned int)confbuf[CFG_EE_ADC_WAIT]);
 			confbuf[CFG_ADC_CONTROL] = 0x00;
 		}
 		
@@ -407,7 +426,34 @@ int main (void)
 			confbuf[CFG_EE_LOCK_LO] = 0x00;
 			confbuf[CFG_EE_LOCK_HI] = 0x00;
 		}
-
+		
+		if((confbuf[CFG_EE_LOCK_HI] == 0xF0) && (confbuf[CFG_EE_LOCK_LO] == 0x0D))
+		{
+			// fill databuffers with random data for testing
+			mLED1 = 1;
+			for (i = 0; i <= 255; i++)
+			{
+				databuf[i] = i*100;
+			}
+			for (i = 17; i < 64; i++)
+			{
+				confbuf[i] = i*3;
+			}
+		}
+		else if ((confbuf[CFG_EE_LOCK_HI] == 0xDE) && (confbuf[CFG_EE_LOCK_LO] == 0xAD))
+		{
+			// fill databuffers with random data for testing
+			mLED1 = 1;
+			mLED2 = 1;
+			for (i = 0; i <= 255; i++)
+			{
+				databuf[i] = 0;
+			}
+			for (i = 17; i < 64; i++)
+			{
+				confbuf[i] = 0;
+			}
+		}
 	
 		Nop();
 		Nop();

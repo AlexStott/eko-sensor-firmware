@@ -9,8 +9,8 @@
 #define UART1_RTS				LATBbits.LATB8
 #define BUS_INTERRUPT			LATAbits.LATA2
 
-#define RTSON					1
-#define RTSOFF					0
+#define BUSTX					1
+#define BUSRX					0
 
 #define RESET_EEPROM			PORTBbits.RB15
 #endif

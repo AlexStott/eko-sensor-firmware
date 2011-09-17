@@ -28,4 +28,8 @@ _FPOR(MCLRE_ON & BORV_V27 & I2C1SEL_SEC & PWRTEN_ON & BOREN_BOR3)
 	_FICD(ICS_PGx2)
 #endif
 
+#if defined (TARGET_EKOBB_R2)
+	_FICD(ICS_PGx1)
+#endif
+
 #endif

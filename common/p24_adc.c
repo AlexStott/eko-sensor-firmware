@@ -2,8 +2,9 @@
 #include "board/p24_board.h"
 #include "include/tmr2delay.h"
 
+extern unsigned int databuf[];
 
-void SampleAnalogPin( unsigned char channel, unsigned int* databuf, unsigned char dataloc );
+void SampleAnalogPin( unsigned char channel, unsigned char dataloc );
 void InitADC( void );
 
 
@@ -24,7 +25,7 @@ void InitADC( void )
 }
 
 // NB Func takes nearly 10us
-void SampleAnalogPin( unsigned char channel, unsigned int* databuf, unsigned char dataloc )
+void SampleAnalogPin( unsigned char channel, unsigned char dataloc )
 {
 	// ADC should be on
 	
@@ -39,15 +40,15 @@ void SampleAnalogPin( unsigned char channel, unsigned int* databuf, unsigned cha
 	return;
 }
 
-void ProcessADCEvents( unsigned char pin_mask, unsigned int pin_interval_us, unsigned char repeat_count, unsigned int repeat_interval_ms, unsigned int* result_buffer)
+void ProcessADCEvents( unsigned char pin_mask, unsigned int pin_interval_us, unsigned char repeat_count, unsigned int repeat_interval_ms)
 {
 	unsigned char buf_offset = 0;
 	unsigned char i = 0;
-	
+	mLED1 = 1;
 	InitADC();
 	
 	AD1CON1bits.ADON = 1;
-	delay_ms(10); // wait for the ADC to settle
+	delay_ms(6); // wait for the ADC to settle
 	
 	while (repeat_count--)
 	{
@@ -55,35 +56,35 @@ void ProcessADCEvents( unsigned char pin_mask, unsigned int pin_interval_us, uns
 		{
 			// AN0
 			buf_offset = 0;
-			SampleAnalogPin( 0, result_buffer, buf_offset+i );
+			SampleAnalogPin( 0, buf_offset+i );
 			delay_us(pin_interval_us);
 		}
 		if ((pin_mask & 0x02) >> 1)
 		{
 			// AN1
 			buf_offset = 32;
-			SampleAnalogPin( 1, result_buffer, buf_offset+i );
+			SampleAnalogPin( 1, buf_offset+i );
 			delay_us(pin_interval_us);
 		}
 		if ((pin_mask & 0x04) >> 2)
 		{
 			// AN2
 			buf_offset = 64;
-			SampleAnalogPin( 2, result_buffer, buf_offset+i );
+			SampleAnalogPin( 2, buf_offset+i );
 			delay_us(pin_interval_us);
 		}
 		if ((pin_mask & 0x08) >> 3)
 		{
 			// AN3
 			buf_offset = 96;
-			SampleAnalogPin( 3, result_buffer, buf_offset+i );
+			SampleAnalogPin( 3, buf_offset+i );
 			delay_us(pin_interval_us);
 		}
 		if ((pin_mask & 0x20) >> 5)
 		{
 			// AN5
 			buf_offset = 128;
-			SampleAnalogPin( 5, result_buffer, buf_offset+i );
+			SampleAnalogPin( 5, buf_offset+i );
 			delay_us(pin_interval_us);
 		}
 		
@@ -93,5 +94,6 @@ void ProcessADCEvents( unsigned char pin_mask, unsigned int pin_interval_us, uns
 	}
 	
 	AD1CON1bits.ADON = 0;
+	mLED1 = 0;
 	return;
 }
