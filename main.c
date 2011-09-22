@@ -180,14 +180,13 @@ char get_msg( void )
 void init_ports( void )
 {
 	//TRIS Settings for UART
-	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
+	#if defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2)
 		TRISBbits.TRISB2 = 1; // In
 		TRISBbits.TRISB7 = 0; // Out
 		TRISBbits.TRISB8 = 0;
 	#endif
-	
 	// TRIS Settings for I2C
-	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
+	#if defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2)
 		TRISBbits.TRISB5 = 1;
 		TRISBbits.TRISB6 = 1;
 	#endif
@@ -200,7 +199,7 @@ void init_ports( void )
 	// Setup Analogue Ports:
 	//     Set TRIS bits to 1 (Input)
 	//	   Set AD1PCFG bits to 0 (ADC Input)
-	#if (defined(TARGET_EKOBB_R3))
+	#if defined(TARGET_EKOBB_R3)
 		TRISAbits.TRISA0 = 1; // AN0
 		TRISAbits.TRISA1 = 1; // AN1
 		TRISBbits.TRISB0 = 1; // AN2
@@ -209,8 +208,12 @@ void init_ports( void )
 		AD1PCFG = 0xFFD0; // AN0-AN3 and AN5 set as analogue
 	#endif
 
+	#if defined(TARGET_EKOBB_R2)
+		AD1PCFG = 0xFFFF;
+	#endif
+
 	// Enable weak internal pull up on CN11	
-	#if (defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2))
+	#if defined(TARGET_EKOBB_R3) || defined(TARGET_EKOBB_R2)
 		TRISBbits.TRISB15 = 1;
 		CNPU1bits.CN11PUE = 1; // enable pullup
 	#endif

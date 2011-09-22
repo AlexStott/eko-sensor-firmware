@@ -38,7 +38,7 @@
 	#define CFG_EE_ADC_ISEL  	0x02 /* ADC Input Select (Hi Byte) */
 	#define CFG_EE_ADC_REPT  	0x03 /* ADC Repeat Count */
 	#define CFG_EE_ADC_SAMP  	0x04 /* ADC Sample Interval (time between sampl sequences*/
-	#define CFG_EE_ADC_WAIT  	0x05 /* ADC Wait between two measurements */
+	#define CFG_EE_ADC_WAIT  	0x05 /* ADC WSait between two measurements */
 	
 	#define CFG_EE_I2C_CHIP  	0x06 /* I2C Device Enable Register */
 	
