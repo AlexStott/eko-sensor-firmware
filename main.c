@@ -438,7 +438,7 @@ int main (void)
 		if (confbuf[CFG_ADC_CONTROL] == 0x80)
 		{
 			ProcessADCEvents( confbuf[CFG_EE_ADC_ISEL], (unsigned int)confbuf[CFG_EE_ADC_WAIT],
-						confbuf[CFG_EE_ADC_REPT], (unsigned int)confbuf[CFG_EE_ADC_WAIT]);
+						confbuf[CFG_EE_ADC_REPT], (unsigned int)confbuf[CFG_EE_ADC_SAMP]);
 			confbuf[CFG_ADC_CONTROL] = 0x00;
 		}
 		
